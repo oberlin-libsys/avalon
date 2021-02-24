@@ -1,2 +1,4 @@
+master_file_management:
+  strategy: 'delete'
 auth:
   registerable: false
