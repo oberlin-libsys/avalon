@@ -106,7 +106,7 @@ ENV         RAILS_ENV=production
 
 RUN         SECRET_KEY_BASE=$(ruby -r 'securerandom' -e 'puts SecureRandom.hex(64)') bundle exec rake webpacker:compile
 RUN         SECRET_KEY_BASE=$(ruby -r 'securerandom' -e 'puts SecureRandom.hex(64)') bundle exec rake assets:precompile
-RUN         cp config/controlled_vocabulary.yml.example config/controlled_vocabulary.yml
+RUN         cp -n config/controlled_vocabulary.yml.example config/controlled_vocabulary.yml || true
 
 
 # Build production image
