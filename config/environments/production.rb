@@ -43,6 +43,7 @@ config.webpacker.check_yarn_integrity = false
   # yet still be able to expire them through the digest params.
   config.assets.digest = true
 
+  config.action_controller.asset_host = ENV['CDN_HOST']
   # `config.assets.precompile` and `config.assets.version` have moved to config/initializers/assets.rb
 
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
