@@ -1455,7 +1455,8 @@ GEM
       actionpack (>= 5.0.0, < 6)
       noid (~> 0.9)
     nokogiri (1.11.2)
-      mini_portile2 (~> 2.4.0)
+      mini_portile2 (~> 2.5.0)
+      racc (~> 1.5.2)
     nom-xml (1.1.0)
       activesupport (>= 3.2.18)
       i18n
