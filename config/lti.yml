@@ -1,0 +1,6 @@
+---
+<tool_consumer_instance_guid>:
+  :uid: :user_id
+  :email: :lis_person_contact_email_primary
+  :context_id: :context_label
+  :context_name: :context_label
