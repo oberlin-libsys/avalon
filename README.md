@@ -83,3 +83,6 @@ To maintain a consistent style of .js/.es6 code, the Prettier package should be 
 
 ## Browser Testing
 Testing support for Avalon Media System is provided by [BrowserStack](https://www.browserstack.com).
+
+#quick edit to test git
+Github
