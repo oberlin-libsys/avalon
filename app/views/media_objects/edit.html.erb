@@ -1,5 +1,5 @@
 <%#
-Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+Copyright 2011-2023, The Trustees of Indiana University and Northwestern
   University.  Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
 
@@ -26,8 +26,10 @@ Unless required by applicable law or agreed to in writing, software distributed
     <h1 class="sr-only">Edit Media Object</h1>
 
     <ol class="breadcrumb">
-      <li><%= @media_object.collection.name.present? ? @media_object.collection.name : 'Untitled collection' %></li>
-      <li><%= @media_object.title.present? ? @media_object.title : 'Untitled item' %></li>
+      <li class="breadcrumb-item">
+        <%= link_to @media_object.collection.name.present? ? @media_object.collection.name : 'Untitled collection', admin_collection_path(@media_object.collection.id) %>
+      </li>
+      <li class="breadcrumb-item"><%= @media_object.title.present? ? @media_object.title : 'Untitled item' %></li>
     </ol>
 
     <div class="page-title-wrapper">

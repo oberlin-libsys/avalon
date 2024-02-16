@@ -1,4 +1,4 @@
-// Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+// Copyright 2011-2022, The Trustees of Indiana University and Northwestern
 //   University.  Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
 //
@@ -31,6 +31,7 @@ class MEJSPlayer {
     this.mejsMarkersHelper = new MEJSMarkersHelper();
     this.mejsQualityHelper = new MEJSQualityHelper();
     this.localStorage = window.localStorage;
+    this.canvasIndex = 0;
 
     // Unpack player configuration object for the new player.
     // This allows for variable params to be sent in.
@@ -109,7 +110,8 @@ class MEJSPlayer {
     let itemScope = document.querySelector('[itemscope="itemscope"]');
     let node = this.mejsUtility.createHTML5MediaNode(
       this.mediaType,
-      this.currentStreamInfo
+      this.currentStreamInfo,
+      this.canvasIndex
     );
 
     // Mount new <audio> or <video> element to the DOM and initialize
@@ -211,7 +213,7 @@ class MEJSPlayer {
       return;
     }
 
-    const $sections = $('#accordion').find('.panel-heading[data-section-id]');
+    const $sections = $('#accordion').find('.card-header[data-section-id]');
     const sectionsIdArray = $sections.map((index, item) =>
       $(item).data('sectionId').toString()
     );
@@ -221,7 +223,7 @@ class MEJSPlayer {
     if (currentIdIndex > -1 && currentIdIndex + 1 < sectionsIdArray.length) {
       const sectionId = sectionsIdArray[currentIdIndex + 1];
       const mediaObjectId = $('#accordion')
-        .find(`.panel-heading[data-section-id="${sectionId}"]`)
+        .find(`.card-header[data-section-id="${sectionId}"]`)
         .data('mediaObjectId');
 
       // Update helper object noting we want the new media clip to auto start
@@ -249,6 +251,13 @@ class MEJSPlayer {
   switchPlayer(playlistItemsT) {
     let markup = '';
 
+    // Update 'data-canvasindex' attribute for each element of the existing
+    // player node on page.
+    let childrenEls = this.mediaElement.children;
+    for (var i = 0; i < childrenEls.length; i++) {
+      childrenEls[i].setAttribute('data-canvasindex', this.canvasIndex)
+    }
+
     this.node.innerHTML = '';
     this.currentStreamInfo.stream_hls.map(source => {
       markup += `<source src="${
@@ -271,7 +280,7 @@ class MEJSPlayer {
     );
 
     // Build playlists button from the new stream when not in playlists
-    if(!playlistItemsT) {
+    if(!playlistItemsT && !this.mejsUtility.isMobile()) {
       this.player.options.playlistItemDefaultTitle = this.currentStreamInfo.embed_title;
       this.player.buildaddToPlaylist(this.player, null, null, null);
     }
@@ -281,16 +290,28 @@ class MEJSPlayer {
       this.player.buildplaylistItems(this.player, null, null, this.mediaElement);
     }
 
-    // Set defaultQuality in player options before building the quality feature
-    this.player.options.defaultQuality = this.localStorage.getItem('quality');
+    // Quality selector is turned off in mobile devices
+    if(!mejs.Features.isAndroid) {
+      // Set defaultQuality in player options before building the quality feature
+      this.player.options.defaultQuality = this.localStorage.getItem('quality');
 
-    // Build quality
-    this.player.buildquality(this.player, null, null, this.mediaElement);
+      // Build quality
+      this.player.buildquality(this.player, null, null, this.mediaElement);
+    } else {
+      // Set current source in absence of the quality selection
+      let currentSource = this.currentStreamInfo.stream_hls
+                        .filter(src => src.quality === this.player.options.defaultQuality)[0];
+     
+      this.player.setSrc(currentSource.url);
+    }
 
     // Set startVolume in options from the current mediaelement instance
     this.player.options.startVolume = this.mediaElement.volume;
 
     this.reInitializeCaptions();
+
+    // Build time rail highlight based on structure
+    this.buildTimeRailHighlight();
 
     this.player.load();
     this.player.play();
@@ -302,8 +323,15 @@ class MEJSPlayer {
    */
   reInitializeCaptions() {
     if (this.currentStreamInfo.captions_path) {
-      // Place tracks button after volume button when tracks are available
-      this.player.featurePosition.tracks = this.player.featurePosition.volume + 1;
+      // Place tracks button
+      if(this.mejsUtility.isMobile()) {
+        // after trackScrubber button in mobile devices
+        this.player.featurePosition.tracks = this.player.featurePosition.trackScrubber + 1;
+      } else {
+        // after volume button in desktop devices
+        this.player.featurePosition.tracks = this.player.featurePosition.volume + 1;
+      }
+      
       this.player.buildtracks(this.player, null, this.player.layers, this.mediaElement);
       // Turn on captions
       this.toggleCaptions();
@@ -311,6 +339,25 @@ class MEJSPlayer {
       // Clear captions object
       delete this.player.tracks;
       this.player.cleartracks(this.player);
+    }
+  }
+
+  /**
+   * Build time rail highlight when intializing the player instance
+   * and advancing to the next section/playlist item
+   */
+  buildTimeRailHighlight() {
+    if (this.highlightRail) {
+      const t = this.mejsTimeRailHelper.calculateSegmentT(
+        this.segmentsMap[this.activeSegmentId],
+        this.currentStreamInfo
+      );
+
+      // Create our custom time rail highlighter element
+      this.highlightSpanEl = this.mejsTimeRailHelper.createTimeHighlightEl(
+        document.getElementById('content')
+      );
+      this.highlightTimeRail(t, this.activeSegmentId);
     }
   }
 
@@ -356,17 +403,30 @@ class MEJSPlayer {
       this.getNewStreamAjax(url, false);
     } else {
       // Clicked within the same section...
-      const parentPanel = $(target).closest('div[class*=panel]');
+      const parentPanel = $(target).closest('div[class*=card]');
       const isHeader =
-        parentPanel.hasClass('panel-heading') ||
-        parentPanel.hasClass('panel-title');
+        parentPanel.hasClass('card-header') ||
+        parentPanel.hasClass('card-title');
       const time = isHeader
         ? 0
         : parseFloat(this.segmentsMap[target.id].fragmentbegin);
       this.mediaElement.setCurrentTime(time);
     }
-
     this.mejsUtility.showControlsBriefly(this.player);
+    // Fix for paused seeking halt when using structure navigation
+    // by forcing timeupdate event to fire with a quick and pause
+    if(this.mediaElement.paused && this.mediaElement) {
+      /** Reference: https://developer.chrome.com/blog/play-request-was-interrupted/ */
+      let playPromise = this.mediaElement.play();
+      if(playPromise !== undefined) {
+        playPromise.then(_ => {
+          this.mediaElement.pause();
+        })
+        .catch(error => {
+          console.log('Media player error: ', error);
+        })
+      }
+    }
   }
 
   /**
@@ -410,7 +470,7 @@ class MEJSPlayer {
    * @return {void}
    */
   handleError(error, mediaElement, originalNode) {
-    console.log('MEJS CREATE ERROR: ' + error);
+    console.log('MEJS ERROR: ' + error);
   }
   /**
    * MediaElement render success callback function
@@ -467,18 +527,7 @@ class MEJSPlayer {
     );
 
     // Show highlighted time in time rail
-    if (this.highlightRail) {
-      const t = this.mejsTimeRailHelper.calculateSegmentT(
-        this.segmentsMap[this.activeSegmentId],
-        this.currentStreamInfo
-      );
-
-      // Create our custom time rail highlighter element
-      this.highlightSpanEl = this.mejsTimeRailHelper.createTimeHighlightEl(
-        document.getElementById('content')
-      );
-      this.highlightTimeRail(t, this.activeSegmentId);
-    }
+    this.buildTimeRailHighlight();
 
     // Filter playlist item player from handling MEJS's time update event
     if (Object.keys(this.playlistItem).length === 0) {
@@ -516,33 +565,6 @@ class MEJSPlayer {
    */
   hasSections() {
     return Object.keys(this.segmentsMap).length > 0;
-  }
-
-  /**
-   * Update section links to reflect active section playing
-   * @function highlightSectionLink
-   * @param  {string} segmentId - HTML node of section link clicked on <a>
-   * @return {void}
-   */
-  highlightSectionLink(segmentId) {
-    const accordionEl = document.getElementById('accordion');
-    const htmlCollection = accordionEl.getElementsByClassName('playable wrap');
-    let segmentLinks = [].slice.call(htmlCollection);
-    let segmentEl = document.getElementById(segmentId);
-
-    // Clear "active" style on all section links
-    segmentLinks.forEach(segmentLink => {
-      segmentLink.classList.remove('current-stream');
-      segmentLink.classList.remove('current-section');
-    });
-    if (segmentEl) {
-      // Add style to clicked segment link
-      segmentEl.classList.add('current-stream');
-      // Add style to section title
-      document
-        .getElementById('section-title-' + segmentEl.dataset.segment)
-        .classList.add('current-section');
-    }
   }
 
   /**
@@ -660,7 +682,7 @@ class MEJSPlayer {
         let fullConfiguration = Object.assign({}, defaults, markerConfig);
         // Create a MediaElement instance
         this.player = new MediaElementPlayer(
-          `mejs-avalon-${this.mediaType}`,
+          'mejs-avalon-player',
           fullConfiguration
         );
         // Add default title from stream info which mejs plugins can access
@@ -755,6 +777,13 @@ class MEJSPlayer {
       document.getElementById('accordion'),
       currentStreamInfo
     );
+
+    const $sections = $('#accordion').find('.card-header[data-section-id]');
+    const sectionsIdArray = $sections.map((index, item) =>
+      $(item).data('sectionId').toString()
+    );
+    const currentIdIndex = [...sectionsIdArray].indexOf(currentStreamInfo.id);
+    this.canvasIndex = currentIdIndex;
   }
 
   /**

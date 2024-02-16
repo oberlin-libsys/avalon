@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -33,7 +33,6 @@ submit_edit = null
       modal.find('#copy-playlist-submit-edit').prop("disabled", false)
 
       # toggle title error off
-      modal.find('#playlist_title').parent().removeClass('has-error')
       modal.find('#title_error').hide()
 
       modal.modal('show')
@@ -44,25 +43,22 @@ $('#copy-playlist-submit-edit').on('click',
     submit_edit = true
 )
 
-$('#copy-playlist-form').submit(
+$('#playlist_title').on('keyup',
   () ->
     modal = $('#copy-playlist-modal')
-    if(modal.find('#playlist_title').val())
-      disable_submit()
-      return true
-    else
+    if($(this).val() == '')
       modal.find('#title_error').show()
-      modal.find('#playlist_title').parent().addClass('has-error')
-    return false
+      modal.find('#copy-playlist-submit').prop("disabled", true)
+      modal.find('#copy-playlist-submit-edit').prop("disabled", true)
+    else
+      modal.find('#title_error').hide()
+      modal.find('#copy-playlist-submit').prop("disabled", false)
+      modal.find('#copy-playlist-submit-edit').prop("disabled", false)
 )
 
-disable_submit = () ->
-  modal = $('#copy-playlist-modal')
-  modal.find('#copy-playlist-submit').prop("disabled", true)
-  modal.find('#copy-playlist-submit-edit').prop("disabled", true)
-
 $('#copy-playlist-form').bind('ajax:success',
-  (event, data, status, xhr) ->
+  (event) ->
+    [data, status, xhr] = event.detail
     if (data.errors)
       console.log(data.errors.title[0])
     else
@@ -72,9 +68,11 @@ $('#copy-playlist-form').bind('ajax:success',
         if ( $('#with_refresh').val() )
           location.reload()
 ).bind('ajax:error',
-  (e, xhr, status, error) ->
+  (event) ->
+    [data, status, xhr] = event.detail
     console.log(xhr.responseJSON.errors)
 )
+
 $('input[name="playlist[visibility]"]').on('click', () ->
   new_val = $(this).val()
   new_text = $('.human_friendly_visibility_'+new_val).attr('title')

@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -68,12 +68,25 @@ describe MasterFilesController do
       end
     end
 
-    context "cannot upload a file with a non-ascii character in the filename" do
-      it "provides a warning about the invalid filename" do
+    context "can upload a file with a non-ascii character in the filename" do
+      it "does not provide a warning about an invalid filename" do
         request.env["HTTP_REFERER"] = "/"
 
         file = fixture_file_upload('/videoshort.mp4', 'video/mp4')
         allow(file).to receive(:original_filename).and_return("videoshort_é.mp4")
+
+        expect { post :create, params: { Filedata: [file], original: 'any', container_id: media_object.id } }.to change { MasterFile.count }
+
+        expect(flash[:error]).to be_nil
+      end
+    end
+
+    context "does not upload a file with improperly encoded filename" do
+      it "provides a warning about an invalid filename" do
+        request.env["HTTP_REFERER"] = "/"
+
+        file = fixture_file_upload('/videoshort.mp4', 'video/mp4')
+        allow(file).to receive(:original_filename).and_return("videoshort_é.mp4".encode('iso-8859-1'))
 
         expect { post :create, params: { Filedata: [file], original: 'any', container_id: media_object.id } }.not_to change { MasterFile.count }
 
@@ -228,17 +241,12 @@ describe MasterFilesController do
   end
 
   describe "#embed" do
-    let!(:master_file) { FactoryBot.create(:master_file) }
-    let(:media_object) do
-      instance_double('MediaObject', title: 'Media Object', id: 'avalon:1234',
-                                     ordered_master_files: [master_file], master_file_ids: [master_file.id])
-    end
+    let!(:master_file) { FactoryBot.create(:master_file, :with_media_object) }
+    let(:media_object) { master_file.media_object }
 
     render_views
 
     before do
-      allow_any_instance_of(MasterFile).to receive(:media_object).and_return(media_object)
-      allow_any_instance_of(MasterFile).to receive(:media_object_id).and_return(media_object.id)
       disableCanCan!
     end
 
@@ -248,6 +256,22 @@ describe MasterFilesController do
 
     it "renders the Google Analytics partial" do
       expect(get(:embed, params: { id: master_file.id })).to render_template('modules/_google_analytics')
+    end
+
+    context 'with cdl enabled' do
+      before { allow(Settings.controlled_digital_lending).to receive(:enable).and_return(true) }
+      before { allow(Settings.controlled_digital_lending).to receive(:collections_enabled).and_return(true) }
+      it "renders the cdl_embed partial" do
+        expect(get(:embed, params: { id: master_file.id })).to render_template('master_files/_cdl_embed')
+      end
+    end
+
+    context 'with cdl disabled' do
+      before { allow(Settings.controlled_digital_lending).to receive(:enable).and_return(true) }
+      before { allow(Settings.controlled_digital_lending).to receive(:collections_enabled).and_return(false) }
+      it "renders the player" do
+        expect(get(:embed, params: { id: master_file.id })).to render_template('master_files/_player')
+      end
     end
 
     context 'with fedora 3 pid' do
@@ -424,6 +448,7 @@ describe MasterFilesController do
 
     it "returns structuralMetadata datastream as JSON" do
       expect(master_file.structuralMetadata.content).to eq('')
+      expect(flash[:success]).to eq('Structure succesfully removed.')
     end
   end
 
@@ -461,16 +486,6 @@ describe MasterFilesController do
       expect(flash[:success]).not_to be_nil
     end
 
-    it "removes contents of captions datastream" do
-      # remove the contents of the datastream
-      post 'attach_captions', params: { id: master_file.id }
-      master_file.reload
-      expect(master_file.captions.empty?).to be true
-      expect(flash[:error]).to be_nil
-      expect(flash[:notice]).to be_nil
-      expect(flash[:success]).not_to be_nil
-    end
-
     context "with invalid file" do
       let(:file) { fixture_file_upload('/videoshort.mp4', 'video/mp4') }
 
@@ -485,6 +500,24 @@ describe MasterFilesController do
     end
   end
   # rubocop:enable RSpec/ExampleLength
+
+  describe "#delete_captions" do
+    let(:master_file) { FactoryBot.create(:master_file, :with_media_object, :with_captions) }
+
+    before do
+      disableCanCan!
+    end
+
+    it "removes contents of captions datastream" do
+      # remove the contents of the datastream
+      post 'delete_captions', params: { id: master_file.id }
+      master_file.reload
+      expect(master_file.captions.empty?).to be true
+      expect(flash[:error]).to be_nil
+      expect(flash[:notice]).to be_nil
+      expect(flash[:success]).not_to be_nil
+    end
+  end
 
   describe "#captions" do
     let(:master_file) { FactoryBot.create(:master_file, :with_media_object, :with_captions) }
@@ -524,7 +557,7 @@ describe MasterFilesController do
         get('waveform', params: { id: master_file.id, empty: true })
         expect(response).to have_http_status(:ok)
         expect(response.content_type).to eq('application/json')
-        expect(response['Content-Disposition']).to eq('attachment; filename="empty_waveform.json"')
+        expect(response['Content-Disposition']).to eq("attachment; filename=\"empty_waveform.json\"; filename*=UTF-8''empty_waveform.json")
       end
     end
   end
@@ -568,6 +601,16 @@ describe MasterFilesController do
       end
     end
 
+    context 'master file has been deleted' do
+      before do
+        allow(MasterFile).to receive(:find).and_raise(Ldp::Gone)
+      end
+
+      it 'returns gone (403)' do
+        expect(get('hls_manifest', params: { id: "deleted", quality: 'auto' })).to have_http_status(:gone)
+      end
+    end
+
     it 'returns unauthorized (401) if cannot read the master file' do
       expect(get('hls_manifest', params: { id: master_file.id, quality: 'auto' })).to have_http_status(:unauthorized)
     end
@@ -575,17 +618,48 @@ describe MasterFilesController do
     it 'returns the dynamic bitrate HLS manifest' do
       login_as :administrator
       expect(get('hls_manifest', params: { id: master_file.id, quality: 'auto' })).to have_http_status(:ok)
-      expect(response.content_type).to eq 'application/x-mpegURL'
+      expect(response.content_type).to eq 'application/x-mpegURL; charset=utf-8'
     end
 
     it 'returns a single quality HLS manifest' do
       login_as :administrator
       expect(get('hls_manifest', params: { id: master_file.id, quality: 'high' })).to have_http_status(:ok)
-      expect(response.content_type).to eq 'application/x-mpegURL'
+      expect(response.content_type).to eq 'application/x-mpegURL; charset=utf-8'
     end
 
     it 'returns a manifest if public' do
       expect(get('hls_manifest', params: { id: public_master_file.id, quality: 'auto' })).to have_http_status(:ok)
+    end
+  end
+
+  describe '#caption_manifest' do
+    let(:media_object) { FactoryBot.create(:published_media_object) }
+    let(:master_file) { FactoryBot.create(:master_file, :with_captions, media_object: media_object) }
+    let(:public_media_object) { FactoryBot.create(:published_media_object, visibility: 'public') }
+    let(:public_master_file) { FactoryBot.create(:master_file, :with_captions, media_object: public_media_object) }
+
+    context 'master file has been deleted' do
+      before do
+        allow(MasterFile).to receive(:find).and_raise(Ldp::Gone)
+      end
+
+      it 'returns gone (403)' do
+        expect(get('caption_manifest', params: { id: master_file.id }, xhr: true)).to have_http_status(:gone)
+      end
+    end
+
+    it 'returns unauthorized (401) if cannot read the master file' do
+      expect(get('caption_manifest', params: { id: master_file.id }, xhr: true)).to have_http_status(:unauthorized)
+    end
+
+    it 'returns the caption manifest' do
+      login_as :administrator
+      expect(get('caption_manifest', params: { id: master_file.id }, xhr: true)).to have_http_status(:ok)
+      expect(response.content_type).to eq 'application/x-mpegURL; charset=utf-8'
+    end
+
+    it 'returns a manifest if public' do
+      expect(get('caption_manifest', params: { id: public_master_file.id }, xhr: true)).to have_http_status(:ok)
     end
   end
 
@@ -645,14 +719,14 @@ describe MasterFilesController do
 
   describe "#update" do
     let(:master_file) { FactoryBot.create(:master_file, :with_media_object) }
-    subject { put('update', params: { id: master_file.id, 
-                                      master_file: { title: "New label", 
-                                                    poster_offset: "00:00:03", 
-                                                    date_digitized: "2020-08-27", 
+    subject { put('update', params: { id: master_file.id,
+                                      master_file: { title: "New label",
+                                                    poster_offset: "00:00:03",
+                                                    date_digitized: "2020-08-27",
                                                     permalink: "https://perma.link" }})}
 
     before do
-      login_as :administrator
+      login_user master_file.media_object.collection.managers.first
     end
 
     it 'updates the master file' do
@@ -665,4 +739,20 @@ describe MasterFilesController do
       expect(master_file.permalink).to eq "https://perma.link"
     end
   end
+
+  describe "#transcript" do
+    let(:supplemental_file) { FactoryBot.create(:supplemental_file) }
+    let(:master_file) { FactoryBot.create(:master_file, supplemental_files: [supplemental_file]) }
+    let(:supplemental_file) { FactoryBot.create(:supplemental_file, :with_transcript_file, :with_transcript_tag, label: 'transcript') }
+
+    it 'serves transcript file content' do
+      login_as :administrator
+      expect(master_file.supplemental_files.first['tags']).to eq (["transcript"])
+      get('transcript', params: { use_route: 'master_files/:id/transcript', id: master_file.id, t_id: supplemental_file.id })
+      expect(response.headers['Content-Type']).to eq('text/vtt')
+      expect(response).to have_http_status(:ok)
+      expect(response.body.include? "Example captions").to be_truthy
+    end
+  end
+
 end

@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -120,7 +120,7 @@ describe MasterFile do
     end
 
     it 'creates an encode' do
-      expect(master_file.encoder_class).to receive(:create).with("file://" + URI.escape(master_file.file_location), { master_file_id: master_file.id, preset: master_file.workflow_name })
+      expect(master_file.encoder_class).to receive(:create).with("file://" + Addressable::URI.escape(master_file.file_location), { master_file_id: master_file.id, preset: master_file.workflow_name, headers: nil })
       master_file.process
     end
 
@@ -199,7 +199,7 @@ describe MasterFile do
       it "should update on save" do
         master_file.poster_offset = 12345
         master_file.save
-        expect(ExtractStillJob).to have_been_enqueued.with(master_file.id,{type:'both',offset:12345})
+        expect(ExtractStillJob).to have_been_enqueued.with(master_file.id, { type: 'both', offset: 12345, headers: nil })
       end
     end
   end
@@ -283,40 +283,122 @@ describe MasterFile do
 
     end
 
-    describe "single uploaded file" do
-      describe "uploaded file" do
-        let(:fixture)    { File.expand_path('../../fixtures/videoshort.mp4',__FILE__) }
-        let(:original)   { File.basename(fixture) }
-        let(:tempfile)   { Tempfile.new('foo') }
-        let(:media_path) { File.expand_path("../../master_files-#{SecureRandom.uuid}",__FILE__)}
-        let(:upload)     { ActionDispatch::Http::UploadedFile.new :tempfile => tempfile, :filename => original, :type => 'video/mp4' }
-        subject {
-          mf = MasterFile.new
-          mf.setContent(upload)
-          mf
-        }
+    describe "web-uploaded file" do
+      let(:fixture)    { File.expand_path('../../fixtures/videoshort.mp4',__FILE__) }
+      let(:original)   { File.basename(fixture) }
+      let(:tempfile)   { Tempfile.new('foo') }
+      let(:media_path) { File.expand_path("../../master_files-#{SecureRandom.uuid}",__FILE__)}
+      let(:dropbox_path) { File.expand_path("../../collection-#{SecureRandom.uuid}",__FILE__)}
+      let(:upload)     { ActionDispatch::Http::UploadedFile.new :tempfile => tempfile, :filename => original, :type => 'video/mp4' }
+      let(:media_object) { MediaObject.new }
+      let(:collection) { Admin::Collection.new }
+      subject {
+        mf = MasterFile.new
+        mf.media_object = media_object
+        mf.setContent(upload, dropbox_dir: collection.dropbox_absolute_path)
+        mf
+      }
 
-        before(:each) do
-          @old_media_path = Settings.encoding.working_file_path
-          FileUtils.mkdir_p media_path
-          FileUtils.cp fixture, tempfile
+      before(:each) do
+        @old_media_path = Settings.encoding.working_file_path
+        FileUtils.mkdir_p media_path
+        FileUtils.cp fixture, tempfile
+        allow(media_object).to receive(:collection).and_return(collection)
+        FileUtils.mkdir_p dropbox_path
+        allow(collection).to receive(:dropbox_absolute_path).and_return(File.absolute_path(dropbox_path))
+      end
+
+      after(:each) do
+        Settings.encoding.working_file_path = @old_media_path
+        File.unlink subject.file_location
+        FileUtils.rm_rf media_path
+        FileUtils.rm_rf dropbox_path
+      end
+
+      it "should move an uploaded file into the root of the collection's dropbox" do
+        Settings.encoding.working_file_path = nil
+        expect(subject.file_location).to eq(File.realpath(File.join(collection.dropbox_absolute_path,original)))
+      end
+
+      it "should copy an uploaded file to the media path" do
+        Settings.encoding.working_file_path = media_path
+        expect(File.fnmatch("#{media_path}/*/#{original}", subject.working_file_path.first)).to be true
+      end
+
+      context "when file with same name already exists in the collection's dropbox" do
+        let(:duplicate) { "videoshort-1.mp4" }
+
+        before do
+          FileUtils.cp fixture, File.join(collection.dropbox_absolute_path, original)
         end
 
-        after(:each) do
-          Settings.encoding.working_file_path = @old_media_path
-          File.unlink subject.file_location
-          FileUtils.rm_rf media_path
-        end
-
-        it "should rename an uploaded file in place" do
+        it "appends a numerical suffix" do
           Settings.encoding.working_file_path = nil
-          expect(subject.file_location).to eq(File.realpath(File.join(File.dirname(tempfile),original)))
+          expect(subject.file_location).to eq(File.realpath(File.join(collection.dropbox_absolute_path,duplicate)))
         end
+      end
+    end
 
-        it "should copy an uploaded file to the media path" do
-          Settings.encoding.working_file_path = media_path
-          expect(File.fnmatch("#{media_path}/*/#{original}", subject.working_file_path.first)).to be true
-        end
+    context "server-side dropbox" do
+      let(:fixture)    { File.expand_path('../../fixtures/videoshort.mp4',__FILE__) }
+      let(:original)   { File.basename(fixture) }
+      let(:dropbox_file_path) { File.join(dropbox_path, 'nested-dir', original)}
+      let(:media_path) { File.expand_path("../../master_files-#{SecureRandom.uuid}",__FILE__)}
+      let(:dropbox_path) { File.expand_path("../../collection-#{SecureRandom.uuid}",__FILE__)}
+      let(:media_object) { MediaObject.new }
+      let(:collection) { Admin::Collection.new }
+      subject {
+        mf = MasterFile.new
+        mf.media_object = media_object
+        mf.setContent(File.new(dropbox_file_path), dropbox_dir: collection.dropbox_absolute_path)
+        mf
+      }
+
+      before(:each) do
+        @old_media_path = Settings.encoding.working_file_path
+        FileUtils.mkdir_p dropbox_path
+        FileUtils.mkdir_p media_path
+        FileUtils.mkdir_p File.dirname(dropbox_file_path)
+        FileUtils.cp fixture, dropbox_file_path
+        allow(media_object).to receive(:collection).and_return(collection)
+        allow(collection).to receive(:dropbox_absolute_path).and_return(File.absolute_path(dropbox_path))
+      end
+
+      after(:each) do
+        Settings.encoding.working_file_path = @old_media_path
+        File.unlink subject.file_location
+        FileUtils.rm_rf media_path
+        FileUtils.rm_rf dropbox_path
+      end
+
+      it "should not move a file in a subdirectory of the collection's dropbox" do
+        Settings.encoding.working_file_path = nil
+        expect(subject.file_location).to eq dropbox_file_path
+        expect(File.exist?(dropbox_file_path)).to eq true
+        expect(File.exist?(File.join(collection.dropbox_absolute_path,original))).to eq false
+      end
+
+      it "should copy an uploaded file to the media path" do
+        Settings.encoding.working_file_path = media_path
+        expect(File.fnmatch("#{media_path}/*/#{original}", subject.working_file_path.first)).to be true
+      end
+    end
+
+    context "google drive" do
+      let(:file) { Addressable::URI.parse("https://www.googleapis.com/drive/v3/files/1QFnOuYM7o7wUn-k8hwfgGYPuM6v6c_Ct?alt=media") }
+      let(:file_name) { "sample.mp4" }
+      let(:file_size) { 12345 }
+      let(:auth_header) { {"Authorization"=>"Bearer ya29.a0AfH6SMC6vSj4D6po1aDxAr6JmY92azh3lxevSuPKxf9QPPSKmMzqbZvI7B3oIACqqMVono1P0XD2F1Jl_rkayoI6JGz-P2cpg44-55oJFcWychAvUliWeRKf1cifMo9JF10YmXxhIfrG5mu7Ahy9FZpudN92p2JhvTI"} }
+
+      subject { MasterFile.new }
+
+      it "should set the right properties" do
+        allow(subject).to receive(:reloadTechnicalMetadata!).and_return(nil)
+        subject.setContent(file, file_name: file_name, file_size: file_size, auth_header: auth_header)
+        expect(subject.file_location).to eq(file.to_s)
+        expect(subject.file_size).to eq(file_size)
+        expect(subject.title).to eq(file_name)
+        expect(subject.instance_variable_get(:@auth_header)).to eq(auth_header)
       end
     end
   end
@@ -454,11 +536,11 @@ describe MasterFile do
     describe 'uri' do
       it 'returns a uri for a sound master file' do
         expect(sound_master_file.rdf_uri.class).to eq(String)
-        expect { URI.parse(sound_master_file.rdf_uri) }.not_to raise_error
+        expect { Addressable::URI.parse(sound_master_file.rdf_uri) }.not_to raise_error
       end
       it 'returns a uri for a video master file' do
         expect(video_master_file.rdf_uri.class).to eq(String)
-        expect { URI.parse(video_master_file.rdf_uri) }.not_to raise_error
+        expect { Addressable::URI.parse(video_master_file.rdf_uri) }.not_to raise_error
       end
     end
   end
@@ -476,6 +558,12 @@ describe MasterFile do
     it 'does not prepend the id if already present' do
       path = '/path/to/avalon_12345-video.mp4'
       expect(MasterFile.post_processing_move_filename(path, id: id).include?(id_prefix + '-' + id_prefix)).to be_falsey
+    end
+    context 'path contains spaces' do
+      path = '/path/to/video file.mp4'
+      it 'removes spaces' do
+        expect(MasterFile.post_processing_move_filename(path, id: id)).not_to include(' ')
+      end
     end
   end
 
@@ -524,6 +612,45 @@ describe MasterFile do
     end
     it "raises an exception when ffmpeg doesn't extract anything" do
       expect {video_master_file.send(:extract_frame, {size: '160x120', offset: 1})}.to raise_error
+    end
+  end
+
+  describe 'find_frame_source' do
+    context 'when master_file has been deleted' do
+      subject(:video_master_file) { FactoryBot.create(:master_file, :with_media_object, :with_derivative, display_aspect_ratio: '1', file_location: '') }
+      let(:source) { video_master_file.send(:find_frame_source) }
+
+      context 'when derivatives are accessible' do
+        let(:high_derivative_locator) { FileLocator.new(video_master_file.derivatives.where(quality_ssi: 'high').first.absolute_location) }
+
+        it 'uses high derivative' do
+          expect(File).to receive(:exist?).with(high_derivative_locator.location).and_return(true)
+          expect(source[:source]).to eq high_derivative_locator.location
+          expect(source[:non_temp_file]).to eq true
+        end
+      end
+
+      context 'when derivatives are not accessible' do
+        let(:high_derivative_locator) { FileLocator.new(video_master_file.derivatives.where(quality_ssi: 'high').first.absolute_location) }
+        let(:hls_temp_file) { "/tmp/temp_segment.ts" }
+
+        it 'falls back to HLS' do
+          expect(video_master_file).to receive(:create_frame_source_hls_temp_file).and_return(hls_temp_file)
+          expect(File).to receive(:exist?).with(high_derivative_locator.location).and_return(false)
+          expect(source[:source]).to eq '/tmp/temp_segment.ts'
+          expect(source[:non_temp_file]).to eq false
+        end
+      end
+    end
+  end
+
+  describe '#ffmpeg_frame_options' do
+    subject { FactoryBot.create(:master_file, :with_media_object, :with_derivative, display_aspect_ratio: '1') }
+
+    it "return the correct options" do
+      expect(subject.send(:ffmpeg_frame_options, "/tmp/test.mp4", "/tmp/test.jpg", 2000, 360, 240, true, { test_header: "header content" })).to eq(
+        ["-headers", "test_header: header content\r\n", "-ss", "2.0", "-i", "/tmp/test.mp4", "-s", "360x240", "-vframes", "1", "-aspect", "1", "-q:v", "4", "-y", "/tmp/test.jpg"]
+      )
     end
   end
 
@@ -683,7 +810,7 @@ describe MasterFile do
 
     context 'without derivative' do
       let(:master_file) { FactoryBot.build(:master_file) }
-    
+
       it 'returns false' do
         expect(master_file.has_audio?).to eq false
       end
@@ -694,7 +821,7 @@ describe MasterFile do
 
       context 'with audio track' do
         let(:derivative) { FactoryBot.build(:derivative, audio_codec: 'aac') }
-        
+
         it 'returns true' do
           expect(master_file.has_audio?).to eq true
         end
@@ -702,11 +829,26 @@ describe MasterFile do
 
       context 'without audio track' do
         let(:derivative) { FactoryBot.build(:derivative, audio_codec: nil) }
-        
+
         it 'returns false' do
           expect(master_file.has_audio?).to eq false
         end
       end
+    end
+  end
+
+  describe 'indexing' do
+    let(:master_file) { FactoryBot.build(:master_file, :with_media_object) }
+
+    before do
+      # Force creation of master_file and then clear queue of byproduct jobs
+      master_file
+      ActiveJob::Base.queue_adapter.enqueued_jobs.clear
+    end
+
+    it 'enqueues indexing of parent media object' do
+      master_file.update_index
+      expect(MediaObjectIndexingJob).to have_been_enqueued.with(master_file.media_object.id)
     end
   end
 end

@@ -1,16 +1,19 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
 #   specific language governing permissions and limitations under the License.
 # ---  END LICENSE_HEADER BLOCK  ---
+
+# Force test rails environment
+ENV['RAILS_ENV'] = 'test'
 
 if ENV['COVERAGE'] || ENV['CI']
   require 'simplecov'
@@ -18,17 +21,16 @@ if ENV['COVERAGE'] || ENV['CI']
 
   SimpleCov.start('rails') do
     add_filter '/spec'
-    add_filter '/app/migration'
   end
   SimpleCov.command_name 'spec'
 end
 
 # Stub out all AWS clients
-require 'aws-sdk'
+require 'aws-sdk-core'
+require 'aws-sdk-s3'
 Aws.config[:stub_responses] = true
 
 # This file is copied to spec/ when you run 'rails generate rspec:install'
-ENV['RAILS_ENV'] ||= 'test'
 require File.expand_path('../../config/environment', __FILE__)
 # Prevent database truncation if the environment is production
 abort('The Rails environment is running in production mode!') if Rails.env.production?
@@ -71,14 +73,21 @@ ActiveRecord::Migration.maintain_test_schema!
 ActiveJob::Base.queue_adapter = :test
 
 Capybara.server = :webrick
+Capybara.server_host = Rails.application.routes.url_helpers.root_url
+Capybara.app_host = Rails.application.routes.url_helpers.root_url
+Capybara.asset_host = Rails.application.routes.url_helpers.root_url
+Capybara.server_port = Rails.application.default_url_options[:port]
 Capybara.register_driver :selenium_chrome_headless_docker_friendly do |app|
   Capybara::Selenium::Driver.load_selenium
+  caps = Selenium::WebDriver::Remote::Capabilities.chrome(loggingPrefs:{browser: 'ALL'})
   browser_options = ::Selenium::WebDriver::Chrome::Options.new
   browser_options.args << '--headless'
   browser_options.args << '--disable-gpu'
   # Sandbox cannot be used inside unprivileged Docker container
   browser_options.args << '--no-sandbox'
-  Capybara::Selenium::Driver.new(app, browser: :chrome, options: browser_options)
+  # Next line commented out in favor of before(:each) resize_to that applies to all drivers
+  # browser_options.args << '--window-size=1920,1080'
+  Capybara::Selenium::Driver.new(app, browser: :chrome, options: browser_options, desired_capabilities: caps)
 end
 
 # eg `SHOW_BROWSER=true ./bin/rspec` will show you an actual chrome browser
@@ -96,7 +105,7 @@ RSpec.configure do |config|
   include Noid::Rails::RSpec
 
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
-  config.fixture_path = "#{::Rails.root}/spec/fixtures"
+  config.file_fixture_path = "#{::Rails.root}/spec/fixtures"
 
   # If you're not using ActiveRecord, or you'd prefer not to run each of your
   # examples within a transaction, remove the following line or assign false
@@ -105,6 +114,8 @@ RSpec.configure do |config|
 
   config.before :suite do
     WebMock.disable_net_connect!(allow: ['localhost', '127.0.0.1', 'fedora', 'fedora-test', 'solr', 'solr-test', 'matterhorn', 'https://chromedriver.storage.googleapis.com'])
+    DatabaseCleaner.allow_remote_database_url = true
+    DatabaseCleaner.url_allowlist = ['postgres://postgres:password@db/avalon', 'postgresql://postgres@localhost:5432/postgres', 'postgresql://postgres:password@db-test/avalon']
     DatabaseCleaner.clean_with(:truncation)
     ActiveFedora::Cleaner.clean!
     disable_production_minter!
@@ -141,6 +152,15 @@ RSpec.configure do |config|
     ActiveFedora::Cleaner.clean!
   end
 
+  config.before(:each, type: :request) do
+    host! Rails.application.default_url_options[:host]
+  end
+
+  # Remove this check to test on smaller window sizes?
+  config.before(:each, js: true) do
+    Capybara.page.driver.browser.manage.window.resize_to(1920,1080) # desktop size
+  end
+
   # RSpec Rails can automatically mix in different behaviours to your tests
   # based on their file location, for example enabling you to call `get` and
   # `post` in specs under `spec/controllers`.
@@ -161,14 +181,20 @@ RSpec.configure do |config|
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
 
+  config.formatter = 'LdpCallProfileFormatter'
+  config.default_formatter = 'doc' if config.files_to_run.one?
+
   # config.include FactoryBot::Syntax::Methods
   config.include Devise::Test::ControllerHelpers, type: :controller
   config.include ControllerMacros, type: :controller
+  config.include Devise::Test::IntegrationHelpers, type: :request
   config.include Warden::Test::Helpers,type: :feature
   config.include FixtureMacros, type: :controller
   config.include OptionalExample
+  config.include Features::SessionHelpers, type: :feature
 end
 
 FactoryBot::SyntaxRunner.class_eval do
-  include ActionDispatch::TestProcess
+  include ActiveSupport::Testing::FileFixtures
+  include ActionDispatch::TestProcess::FixtureFile
 end

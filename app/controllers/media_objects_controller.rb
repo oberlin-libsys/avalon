@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -30,7 +30,9 @@ class MediaObjectsController < ApplicationController
   before_action :load_player_context, only: [:show]
 
   def self.is_editor ctx
-    ctx.current_ability.is_editor_of?(ctx.instance_variable_get('@media_object').collection)
+    Rails.cache.fetch([ctx.hash, :is_editor], expires_in: 5.seconds) do
+      ctx.current_ability.is_editor_of?(ctx.instance_variable_get('@media_object').collection)
+    end
   end
   def self.is_lti_session ctx
     ctx.user_session.present? && ctx.user_session[:lti_group].present?
@@ -151,7 +153,7 @@ class MediaObjectsController < ApplicationController
         playlist.items += [PlaylistItem.new(clip: clip, playlist: playlist)]
       end
     end
-    link = view_context.link_to('View Playlist', playlist_path(playlist), class: "btn btn-primary btn-xs")
+    link = view_context.link_to('View Playlist', playlist_path(playlist), class: "btn btn-primary btn-sm")
     render json: {message: "<p>Playlist items created successfully.</p> #{link}", status: 200}
   end
 
@@ -171,14 +173,17 @@ class MediaObjectsController < ApplicationController
   end
 
   def update_media_object
-    begin
-      collection = Admin::Collection.find(api_params[:collection_id])
-    rescue ActiveFedora::ObjectNotFoundError
-      render json: { errors: ["Collection not found for #{api_params[:collection_id]}"] }, status: 422
-      return
+    if (api_params[:collection_id].present?)
+      begin
+        collection = Admin::Collection.find(api_params[:collection_id])
+      rescue ActiveFedora::ObjectNotFoundError
+        render json: { errors: ["Collection not found for #{api_params[:collection_id]}"] }, status: 422
+        return
+      end
+      
+      @media_object.collection = collection
     end
 
-    @media_object.collection = collection
     @media_object.avalon_uploader = 'REST API'
 
     populate_from_catalog = (!!api_params[:import_bib_record] && media_object_parameters[:bibliographic_id].present?)
@@ -195,9 +200,9 @@ class MediaObjectsController < ApplicationController
         bib_source = media_object_parameters.dig(:bibliographic_id, :source) || ''
         logger.warn "Failed bib import using bibID #{bib_id}, #{bib_source}"
       ensure
-        if !@media_object.valid?
+        unless @media_object.valid?
           # Fall back to MODS as sent if Bib Import fails
-          @media_object.update_attributes(media_object_parameters.slice(*@media_object.errors.keys)) if params.has_key?(:fields) and params[:fields].respond_to?(:has_key?)
+          @media_object.update_attributes(media_object_parameters.slice(*@media_object.errors.attribute_names)) if params.has_key?(:fields) and params[:fields].respond_to?(:has_key?)
         end
       end
     else
@@ -206,7 +211,7 @@ class MediaObjectsController < ApplicationController
 
     error_messages = []
     unless @media_object.valid?
-      invalid_fields = @media_object.errors.keys
+      invalid_fields = @media_object.errors.attribute_names
       required_fields = [:title, :date_issued]
       unless required_fields.any? { |f| invalid_fields.include? f }
         invalid_fields.each do |field|
@@ -316,11 +321,8 @@ class MediaObjectsController < ApplicationController
   end
 
   def index
-    respond_to do |format|
-      format.json {
-        paginate json: MediaObject.all
-      }
-    end
+    mos = paginate MediaObject.accessible_by(current_ability, :index)
+    render json: mos.to_a.collect { |mo| mo.as_json(include_structure: params[:include_structure] == "true") }
   end
 
   def show
@@ -417,7 +419,8 @@ class MediaObjectsController < ApplicationController
       if cannot? :update, media_object
         errors += ["#{media_object.title} (#{id}) (permission denied)."]
       else
-        case status
+        begin
+          case status
           when 'publish'
             media_object.publish!(user_key)
             # additional save to set permalink
@@ -430,11 +433,14 @@ class MediaObjectsController < ApplicationController
             else
               errors += ["#{media_object.title} (#{id}) (permission denied)."]
             end
+          end
+        rescue ActiveFedora::RecordInvalid => e
+          errors += [e.message]
         end
       end
     end
-    message = "#{success_count} #{'media object'.pluralize(success_count)} successfully #{status}ed."
-    message += "These objects were not #{status}ed:</br> #{ errors.join('<br/> ') }" if errors.count > 0
+    message = "#{success_count} #{'media object'.pluralize(success_count)} successfully #{status}ed." if success_count.positive?
+    message = "Unable to publish #{'item'.pluralize(errors.count)}: #{ errors.join('<br/> ') }" if errors.count > 0
     redirect_back(fallback_location: root_path, flash: {notice: message.html_safe})
   end
 
@@ -464,7 +470,7 @@ class MediaObjectsController < ApplicationController
 
     master_files = master_file_presenters
     canvas_presenters = master_files.collect do |mf|
-      stream_info = secure_streams(mf.stream_details)
+      stream_info = secure_streams(mf.stream_details, @media_object.id)
       IiifCanvasPresenter.new(master_file: mf, stream_info: stream_info)
     end
     presenter = IiifManifestPresenter.new(media_object: @media_object, master_files: canvas_presenters)
@@ -512,6 +518,12 @@ class MediaObjectsController < ApplicationController
     end
   end
 
+  rescue_from Avalon::VocabularyNotFound do |exception|
+    support_email = Settings.email.support
+    notice_text = I18n.t('errors.controlled_vocabulary_error') % [exception.message, support_email, support_email]
+    redirect_to root_path, flash: { error: notice_text.html_safe }
+  end
+
   protected
 
   def master_file_presenters
@@ -528,7 +540,8 @@ class MediaObjectsController < ApplicationController
                                         workflow_id: nil,
                                         comment: [],
                                         supplemental_files_json: nil
-                                      })
+                                      },
+                                      load_reflections: true)
   end
 
   def load_master_files(mode = :rw)
@@ -542,7 +555,11 @@ class MediaObjectsController < ApplicationController
   def load_current_stream
     set_active_file
     set_player_token
-    @currentStreamInfo = @currentStream.nil? ? {} : secure_streams(@currentStream.stream_details)
+    @currentStreamInfo = if params[:id]
+                           @currentStream.nil? ? {} : secure_streams(@currentStream.stream_details, params[:id])
+                         else
+                           @currentStream.nil? ? {} : secure_streams(@currentStream.stream_details, @media_object.id)
+                         end
     @currentStreamInfo['t'] = view_context.parse_media_fragment(params[:t]) # add MediaFragment from params
     @currentStreamInfo['lti_share_link'] = view_context.lti_share_url_for(@currentStream)
     @currentStreamInfo['link_back_url'] = view_context.share_link_for(@currentStream)

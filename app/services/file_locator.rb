@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -23,8 +23,8 @@ class FileLocator
 
     def initialize(uri)
       uri = Addressable::URI.parse(uri)
-      @bucket = URI.decode(uri.host)
-      @key = URI.decode(uri.path).sub(%r(^/*(.+)/*$),'\1')
+      @bucket = Addressable::URI.unencode(uri.host)
+      @key = Addressable::URI.unencode(ActiveEncode.sanitize_uri(uri)).sub(%r(^/*(.+)/*$),'\1')
     end
 
     def object
@@ -47,14 +47,14 @@ class FileLocator
   def uri
     if @uri.nil?
       if source.is_a? File
-        @uri = Addressable::URI.parse("file://#{URI.encode(File.expand_path(source))}")
+        @uri = Addressable::URI.parse("file://#{Addressable::URI.escape(File.expand_path(source))}")
       else
         encoded_source = source
         begin
           @uri = Addressable::URI.parse(encoded_source)
-        rescue URI::InvalidURIError
+        rescue Addressable::URI::InvalidURIError
           if encoded_source == source
-            encoded_source = URI.encode(encoded_source)
+            encoded_source = Addressable::URI.escape(encoded_source)
             retry
           else
             raise
@@ -62,7 +62,7 @@ class FileLocator
         end
 
         if @uri.scheme.nil?
-          @uri = Addressable::URI.parse("file://#{URI.encode(File.expand_path(source))}")
+          @uri = Addressable::URI.parse("file://#{Addressable::URI.escape(File.expand_path(source))}")
         end
       end
     end
@@ -74,7 +74,9 @@ class FileLocator
     when 's3'
       S3File.new(uri).object.presigned_url(:get)
     when 'file'
-      URI.decode(uri.path)
+      # In case file name includes ? or # use full uri omitting components before path
+      # instead of using only path which would miss query or fragment components
+      Addressable::URI.unencode(uri.omit(:scheme, :user, :password, :host, :port))
     else
       @uri.to_s
     end
@@ -134,7 +136,7 @@ class FileLocator
   end
 
   def self.remove_s3_dir(path)
-    path_uri = URI.parse(path)
+    path_uri = Addressable::URI.parse(path)
     bucket = Aws::S3::Resource.new.bucket(Settings.encoding.masterfile_bucket)
     bucket.objects(prefix: "#{path_uri.path}/").batch_delete!
 

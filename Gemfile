@@ -3,96 +3,99 @@ source 'https://rubygems.org'
 # Core rails
 gem 'bootsnap', require: false
 gem 'listen'
-gem 'rails', '=5.2.6.2'
+gem 'net-smtp', require: false
+gem 'psych', '< 4'
+gem 'rails', '=7.0.4.3'
 gem 'sprockets', '~>3.7.2'
+#gem 'sprockets-rails', require: 'sprockets/railtie'
 gem 'sqlite3'
+# Force newer version of mail for compatibility with rails 6.0.6.1
+gem 'mail', '> 2.8.0.1'
 
 # Assets
-gem 'coffee-rails', '~> 4.2.0'
+gem 'bootstrap', '~> 4.0'
+gem 'coffee-rails', '~> 5.0'
+gem "font-awesome-rails"
 gem 'jquery-datatables'
 gem 'jquery-rails'
 gem 'jquery-ui-rails'
 gem 'react-rails'
-gem 'sass-rails', '~> 5.0'
+#gem 'sass-rails', '>= 6'
 # Use the last known good version of sass
 gem 'sass', '3.4.22'
 gem 'sprockets-es6'
+gem 'twitter-typeahead-rails', '0.11.1.pre.corejavascript'
 gem 'uglifier', '>= 1.3.0'
 gem 'webpacker'
 
 # Core Samvera
-gem 'active-fedora', '~> 12.1'
-gem 'active_fedora-datastreams', '~> 0.2.0'
-gem 'fedora-migrate', git: 'https://github.com/avalonmediasystem/fedora-migrate.git', tag: 'avalon-r6.5'
-gem 'hydra-head', '~> 10.6'
-gem 'noid-rails', '~> 3.0.1'
+gem 'active-fedora', '~> 14.0', '>= 14.0.1'
+gem 'active_fedora-datastreams', '~> 0.5'
+gem 'hydra-head', '~> 12.0'
+gem 'ldp', '~> 1.1.0'
+gem 'noid-rails', '~> 3.1'
+gem 'om', git: 'https://github.com/avalonmediasystem/om.git', tag: 'v3.2.0-ruby3'
 gem 'rdf-rdfxml'
 
 # Samvera version pins
-gem 'blacklight', '< 7.0'
-gem 'rdf', '~> 2.2'
-gem 'rsolr', '~> 1.0'
+gem 'blacklight', '~> 7.25'
+gem 'blacklight-access_controls', '>= 6.0.1' # ensure rails 6 support
+gem 'rdf', '~> 3.1'
+gem 'rsolr', '~> 2.0'
 
 # Rails & Samvera Plugins
 gem 'about_page', git: 'https://github.com/avalonmediasystem/about_page.git', tag: 'avalon-r6.5'
-gem 'active_annotations', '~> 0.2.2'
+gem 'active_annotations', '~> 0.4'
 gem 'activerecord-session_store', '>= 2.0.0'
 gem 'acts_as_list'
 gem 'api-pagination'
 gem 'avalon-about', git: 'https://github.com/avalonmediasystem/avalon-about.git', tag: 'avalon-r6.4'
+#gem 'bootstrap-sass', '< 3.4.1' # Pin to less than 3.4.1 due to change in behavior with popovers
 gem 'bootstrap-toggle-rails'
 gem 'bootstrap_form'
-gem 'iiif_manifest', '~> 0.6'
+gem 'iiif_manifest', '~> 1.3'
 gem 'rack-cors', require: 'rack/cors'
 gem 'rails_same_site_cookie'
 gem 'recaptcha', require: 'recaptcha/rails'
-gem 'samvera-persona', '~> 0.1.7'
-gem 'speedy-af', '~> 0.1.3'
+gem 'samvera-persona', '~> 0.4', '>= 0.4.1'
+gem 'speedy-af', '~> 0.3'
 
 # Avalon Components
 gem 'avalon-workflow', git: "https://github.com/avalonmediasystem/avalon-workflow.git", tag: 'avalon-r6.5'
 
 # Authentication & Authorization
-gem 'devise', '~> 4.4'
-gem 'devise_invitable', '~> 1.6'
+gem 'devise', '~> 4.8'
+gem 'devise_invitable', '~> 2.0'
 gem 'ims-lti', '~> 1.1.13'
 gem 'net-ldap'
-gem 'omniauth-identity'
+gem 'omniauth', '~> 2.0'
+gem 'omniauth-identity', '>= 2.0.0'
 gem 'omniauth-lti', git: "https://github.com/avalonmediasystem/omniauth-lti.git", tag: 'avalon-r4'
 gem 'omniauth-oktaoauth'
+gem "omniauth-saml", "~> 2.0"
 
 # Media Access & Transcoding
-gem 'active_encode', '~> 0.7.0'
+gem 'active_encode', '~> 1.0', '>= 1.1.3'
 gem 'audio_waveform-ruby', '~> 1.0.7', require: 'audio_waveform'
-gem 'browse-everything', '~> 0.13.0'
+gem 'browse-everything', git: "https://github.com/avalonmediasystem/browse-everything.git", branch: 'v1.2-avalon'
 gem 'fastimage'
 gem 'media_element_add_to_playlist', git: 'https://github.com/avalonmediasystem/media-element-add-to-playlist.git', tag: 'avalon-r6.5'
-gem 'mediainfo', git: "https://github.com/avalonmediasystem/mediainfo.git", tag: 'avalon-r6.5'
+gem 'mediainfo', git: "https://github.com/avalonmediasystem/mediainfo.git", tag: 'v0.7.1-avalon'
 gem 'rest-client', '~> 2.0'
 gem 'roo'
 gem 'wavefile', '~> 1.0.1'
 
 # Data Translation & Normalization
-gem 'edtf'
+gem 'edtf', '>= 3.1.1'
 gem 'iconv', '~> 1.0.6'
 gem 'marc'
-
-# MediaElement.js & Plugins
-gem 'mediaelement_rails', git: 'https://github.com/avalonmediasystem/mediaelement_rails.git', tag: 'avalon-r6_flash-fix'
-gem 'media-element-logo-plugin'
-gem 'media_element_thumbnail_selector', git: 'https://github.com/avalonmediasystem/media-element-thumbnail-selector', tag: 'avalon-r4'
-gem 'mediaelement-hd-toggle', git:'https://github.com/avalonmediasystem/mediaelement-hd-toggle.git', tag: 'avalon-r6.3'
-gem 'mediaelement-qualityselector', git:'https://github.com/avalonmediasystem/mediaelement-qualityselector.git', tag: 'avalon-r4'
-gem 'mediaelement-skin-avalon', git:'https://github.com/avalonmediasystem/mediaelement-skin-avalon.git', tag: 'avalon-r5'
-gem 'mediaelement-title', git:'https://github.com/avalonmediasystem/mediaelement-title.git', tag: 'avalon-r4'
-gem 'mediaelement-track-scrubber', git: 'https://github.com/avalonmediasystem/mediaelement-track-scrubber.git', tag: 'avalon-r6'
 
 # Jobs
 gem 'activejob-traffic_control'
 gem 'activejob-uniqueness'
 gem 'redis-rails'
-gem 'sidekiq', '~> 5.2.7'
-gem 'sidekiq-cron', '~> 1.2'
+gem 'sidekiq', '~> 6.2'
+gem 'sidekiq-cron', '~> 1.9'
 
 # Coding Patterns
 gem 'config'
@@ -112,7 +115,6 @@ group :development do
   # Use Bixby instead of rubocop directly
   gem 'bixby', require: false
   gem 'web-console'
-  gem 'xray-rails'
 end
 
 group :development, :test do
@@ -135,7 +137,7 @@ group :test do
   gem 'factory_bot_rails'
   gem 'fakefs', require: 'fakefs/safe'
   gem 'faker'
-  gem 'hashdiff'
+  gem 'hashdiff', ">= 1.0"
   gem 'rails-controller-testing'
   gem 'rspec-its'
   gem 'rspec-retry'
@@ -144,19 +146,19 @@ group :test do
   gem 'shoulda-matchers'
   gem 'simplecov'
   gem 'webdrivers', '~> 3.0'
-  gem 'webmock', '~> 3.5.1'
+  gem 'webmock', '~> 3.5'
 end
 
 group :production do
   gem 'google-analytics-rails', '1.1.0'
   gem 'lograge'
   gem 'okcomputer'
-  gem 'puma'
+  gem 'puma', '>= 4.3.8'
 end
 
 # Install the bundle --with aws when running on Amazon Elastic Beanstalk
 group :aws, optional: true do
-  gem 'active_elastic_job', github: 'tawan/active-elastic-job'
+  gem 'active_elastic_job'
   gem 'aws-partitions'
   gem 'aws-sdk-rails'
   gem 'aws-sdk-cloudfront'

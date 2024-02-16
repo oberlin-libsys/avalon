@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -121,6 +121,10 @@ describe User do
       allow_any_instance_of(Net::LDAP).to receive(:search).and_return([entry])
       expect(user.send(:ldap_groups)).to eq(['Group1','Group2'])
     end
+    it "should return [] when ldap search returns nil" do
+      allow_any_instance_of(Net::LDAP).to receive(:search).and_return(nil)
+      expect(user.send(:ldap_groups)).to eq([])
+    end
   end
 
   describe "#autocomplete" do
@@ -136,6 +140,12 @@ describe User do
       bookmark = Bookmark.create(document_id: Faker::Number.digit, user: user)
       expect { user.destroy }.to change { Bookmark.exists? bookmark.id }.from( true ).to( false )
     end
+    it 'removes checkouts for user' do
+      user = FactoryBot.create(:public)
+      active_checkout = FactoryBot.create(:checkout, user_id: user.id)
+      returned_checkout = FactoryBot.create(:checkout, user_id: user.id, return_time: DateTime.current - 1.day)
+      expect { user.destroy }.to change { Checkout.all.count }.from(2).to(0)
+    end
   end
 
   describe '#timeline_tags' do
@@ -147,7 +157,7 @@ describe User do
 
     it 'is a list of timeline tags' do
       timeline = FactoryBot.create(:timeline, user: user)
-      expect(user.timeline_tags).to match_array timeline.tags
+      expect(user.timeline_tags).to match_array timeline.tags.uniq
     end
 
     it 'does not contain duplicates' do

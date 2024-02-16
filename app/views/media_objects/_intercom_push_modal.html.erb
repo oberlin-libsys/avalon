@@ -1,5 +1,5 @@
 <%#
-Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+Copyright 2011-2023, The Trustees of Indiana University and Northwestern
   University.  Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
 
@@ -14,7 +14,7 @@ Unless required by applicable law or agreed to in writing, software distributed
 ---  END LICENSE_HEADER BLOCK  ---
 %>
 
-<div id="intercom_push" class="modal fade" role="dialog" data-backdrop="true" data-submit_url="<%= 'create' %>" >
+<div id="intercom_push" class="modal" role="dialog" data-submit_url="<%= 'create' %>" >
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <%= form_for(@media_object, url: {action: "intercom_push"}, html: { id: 'intercom_push_form' }) {}%>

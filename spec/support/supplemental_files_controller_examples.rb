@@ -1,4 +1,18 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
+#   University.  Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software distributed
+#   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+#   CONDITIONS OF ANY KIND, either express or implied. See the License for the
+#   specific language governing permissions and limitations under the License.
+# ---  END LICENSE_HEADER BLOCK  ---
+
+# Copyright 2011-2022, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #
@@ -47,7 +61,7 @@ RSpec.shared_examples 'a nested controller for' do |object_class|
   let(:master_file) { FactoryBot.create(:master_file, media_object_id: media_object.id, supplemental_files: [supplemental_file]) }
   let(:supplemental_file) { FactoryBot.create(:supplemental_file, :with_attached_file, label: 'label') }
   let(:object) { object_class == MasterFile ? master_file : media_object }
-
+  let(:manager) { media_object.collection.managers.first }
 
   describe 'security' do
     context 'with unauthenticated user' do
@@ -89,7 +103,7 @@ RSpec.shared_examples 'a nested controller for' do |object_class|
     let(:object) { object_class == MasterFile ? master_file : media_object }
 
     before do
-      login_as :administrator
+      login_user manager
     end
 
     context 'json request' do
@@ -103,6 +117,21 @@ RSpec.shared_examples 'a nested controller for' do |object_class|
 
           expect(object.supplemental_files.first.id).to eq 1
           expect(object.supplemental_files.first.label).to eq 'label'
+          expect(object.supplemental_files.first.file).to be_attached
+        end
+
+        let(:tags) { ["transcript"] }
+        let(:valid_create_attributes_with_tags) { valid_create_attributes.merge(tags: tags) }
+        it "creates a SupplementalFile with tags for #{object_class}" do
+          expect {
+            post :create, params: { class_id => object.id, supplemental_file: valid_create_attributes_with_tags, format: :json }, session: valid_session
+          }.to change { object.reload.supplemental_files.size }.by(1)
+          expect(response).to have_http_status(:created)
+          expect(response.location).to eq "/#{object_class.model_name.plural}/#{object.id}/supplemental_files/#{assigns(:supplemental_file).id}"
+
+          expect(object.supplemental_files.first.id).to eq 1
+          expect(object.supplemental_files.first.label).to eq 'label'
+          expect(object.supplemental_files.first.tags).to eq tags
           expect(object.supplemental_files.first.file).to be_attached
         end
       end
@@ -174,7 +203,7 @@ RSpec.shared_examples 'a nested controller for' do |object_class|
 
   describe "PUT #update" do
     before do
-      login_as :administrator
+      login_user manager
     end
 
     context 'json request' do
@@ -236,7 +265,7 @@ RSpec.shared_examples 'a nested controller for' do |object_class|
 
   describe "DELETE #destroy" do
     before do
-      login_as :administrator
+      login_user manager
     end
 
     context 'json request' do

@@ -1,5 +1,5 @@
 <%#
-Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+Copyright 2011-2023, The Trustees of Indiana University and Northwestern
   University.  Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
 
@@ -14,7 +14,7 @@ Unless required by applicable law or agreed to in writing, software distributed
 ---  END LICENSE_HEADER BLOCK  ---
 %>
 
-<p class="muted">Drag files to reorder them.</p>
+<p class="text-muted">Drag files to reorder them.</p>
 
 <% if @masterFiles.blank? %>
   <div class="well">There are no media files</div>
@@ -55,7 +55,7 @@ Unless required by applicable law or agreed to in writing, software distributed
             <%= number_to_human_size(section.file_size) %>
           </li>
           <li>
-            <button class="btn btn-default btn-xs" type="button" data-toggle="collapse" data-target="#structure_<%= index %>" aria-expanded="false" aria-controls="structure_<%= index %>">
+            <button class="btn btn-outline btn-struct" type="button" data-toggle="collapse" data-target="#structure_<%= index %>" aria-expanded="false" aria-controls="structure_<%= index %>">
               Edit Structure
             </button>
           </li>
@@ -64,23 +64,20 @@ Unless required by applicable law or agreed to in writing, software distributed
           <div class="tool_actions">
             <span class="tool_label">Structure</span>
             <%= form_for section, :url => attach_structure_master_file_path(section.id), html: {method: "post"} do |form| %>
-            <%= form.file_field :structure, class: "filedata", style: "height:0px;width:0px;" %>
+            <%= form.file_field :structure, id: "structure_#{index}_filedata", class: "filedata", style: "display:none;" %>
             <% item_label=html_escape(stream_label_for(section)) %>
             <% stream_url=hls_manifest_master_file_url(section.id, quality: 'auto') %>
             <div class="btn-toolbar">
-              <input type="button" class="btn btn-primary btn-xs"
-                onclick="$('#structure_<%= index %> .filedata').click();" value="<%= section.structuralMetadata.present? ? 'Replace' : 'Upload'%>" />
-              <div class="btn-group">
-                <% if section.structuralMetadata.valid? %>
-                <%= react_component("ReactButtonContainer", {sectionIndex: index, masterFileID: section.id, baseURL: request.protocol+request.host_with_port, streamDuration: section.duration, audioStreamURL: stream_url, initStructure: section.structuralMetadata.as_json}) %>
-                <% else %>
-                <%= react_component("ReactButtonContainer", {sectionIndex: index, masterFileID: section.id, baseURL: request.protocol+request.host_with_port, streamDuration: section.duration, audioStreamURL: stream_url, initStructure: "{ \"label\": \"#{item_label}\", \"type\": \"div\", \"items\": [] }"}, html_options={ class: 'react-button-container' }) %>
-                <% end %>
-              </div>
-              <input type="button" class='btn btn-primary btn-xs' value="Advanced Edit" data-toggle="modal"
-                data-target="#advanced_edit_structure_<%= index %>" />
+              <label class="btn btn-primary btn-struct mr-1 file-upload-label" for="structure_<%= index %>_filedata"><%= section.structuralMetadata.present? ? 'Replace' : 'Upload'%></label>
+              <% if section.structuralMetadata.valid? %>
+                <%= react_component("ReactButtonContainer", {canvasIndex: index, mediaObjectID: @media_object.id, masterFileID: section.id, baseURL: request.protocol+request.host_with_port, initStructure: section.structuralMetadata.as_json}) %>
+              <% else %>
+                <%= react_component("ReactButtonContainer", {canvasIndex: index, mediaObjectID: @media_object.id, masterFileID: section.id, baseURL: request.protocol+request.host_with_port, initStructure: { label: "#{item_label}", type: "div", items: [] }}, html_options={ class: 'react-button-container' }) %>
+              <% end %>
+              <button type="button" class="btn btn-primary btn-struct mr-1" value="Advanced Edit" data-toggle="modal"
+                data-target="#advanced_edit_structure_<%= index %>">Advanced Edit</button>
               <% if section.structuralMetadata.present? %>
-                <input type="submit" class="btn btn-danger btn-xs" value="Remove" />
+                <%= link_to 'Remove', structure_master_file_path(section.id), method: :delete, class: 'btn btn-danger btn-struct btn-confirmation', data: {placement: 'top'} %>
               <% end %>
             </div>
             <% end %>
@@ -96,21 +93,21 @@ Unless required by applicable law or agreed to in writing, software distributed
     </ul>
   </div>
   <br class="clear" />
-  <%= bootstrap_form_for @media_object, html: { class: "form-horizontal" } do |media| %>
+  <%= bootstrap_form_for @media_object do |media| %>
   <%= render "workflow_buttons" %>
 <% end %>
 
 <% @masterFiles.each_with_index do |section, index| %>
 <% default_structure="<Item label='#{html_escape(stream_label_for(section))}'></Item>" %>
-<div id="advanced_edit_structure_<%= index %>" class="structure_edit modal fade" data-backdrop="false"
+<div id="advanced_edit_structure_<%= index %>" class="structure_edit modal fade" data-backdrop="static"
   data-submit_url="<%= attach_structure_master_file_path(section.id) %>">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-xl" style="width:65%">
     <div class="modal-content col-md-12">
       <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
         <h4 class="modal-title">Advanced Edit Structure</h4>
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
       </div>
-      <div class="modal-body structure_edit col-md-12">
+      <div class="modal-body structure_edit col-md-12" style="height:40vh">
         <textarea rows=20 class="col-md-12 original_textarea" id="structure_<%= index %>"
           style="visibility:hidden"><%= section.structuralMetadata.valid? ? section.structuralMetadata.to_xml : default_structure %></textarea>
       </div>
@@ -172,15 +169,6 @@ Unless required by applicable law or agreed to in writing, software distributed
     }
   }
 
-  $('.structure_toggle').on('click', function (e) {
-    e.preventDefault();
-    $(this).find('i.fa').toggleClass('hidden');
-    target = $(this).data('target')
-    section_index = parseInt(target.split('_')[1]);
-    populate_structure_preview(section_index)
-    $('#' + target).toggleClass('hidden');
-  });
-
   $('.filedata').change(function () {
     $(this).closest('form').submit();
   });
@@ -200,48 +188,42 @@ Unless required by applicable law or agreed to in writing, software distributed
       }
       return msg;
     } else {
-      current_xml_editor.find('textarea.original_textarea').html(r['structure']);
-      section_index = parseInt(current_xml_editor.attr('id').split('_').pop());
+      modal = $(`.structure_edit[data-submit_url='${$(this)[0].url}']`)
+      modal.find('textarea.original_textarea').html(r['structure']);
+      section_index = parseInt(modal.attr('id').split('_').pop());
       populate_structure_preview(section_index);
-      current_xml_editor.modal('hide');
-      current_xml_editor = null;
+      modal.modal('hide');
     }
   }
 
-  var current_xml_editor;
   var extractor = new Xsd2Json('avalon_structure.xsd', {
     'schemaURI': '/',
     'rootElement': 'item'
   });
   $('.structure_edit.modal').on('shown.bs.modal', function () {
     modal = $(this);
-    current_xml_editor = modal;
+    if (modal.find('.xml_editor_container').length > 0) return;
+
     te = modal.find('.original_textarea').first();
-    footer = modal.find('.modal-footer').first();
-    mb = modal.find('.modal-body').first();
-    te.height($(window).height() + modal.offset().top - te.offset().top - footer.height() - (mb.outerHeight() - mb
-      .height()));
-    if (modal.find('.xml_editor_container').length == 0) {
-      te.xmlEditor({
-        schema: extractor.getSchema(),
-        floatingMenu: false,
-        confirmExitWhenUnsubmitted: false,
-        loadSchemaAsychronously: false,
-        xmlEditorLabel: 'Graphical',
-        textEditorLabel: 'Raw XML',
-        containerElement: {
-          element: mb,
-          fixedHeight: true,
-        },
-        submitButtonConfigs: [{
-          url: $(this).data('submit_url'),
-          responseHandler: attach_structure_response,
-          label: 'Save and Exit',
-          cssClass: 'btn btn-primary section_edit_submit',
-        }],
-        defaultView: 'text',
-      });
-    }
+    te.xmlEditor({
+      schema: extractor.getSchema(),
+      floatingMenu: false,
+      confirmExitWhenUnsubmitted: false,
+      loadSchemaAsychronously: false,
+      xmlEditorLabel: 'Graphical',
+      textEditorLabel: 'Raw XML',
+      containerElement: {
+        element: modal.find('.modal-body').first(),
+        fixedHeight: true,
+      },
+      submitButtonConfigs: [{
+        url: $(this).data('submit_url'),
+        responseHandler: attach_structure_response,
+        label: 'Save and Exit',
+        cssClass: 'btn btn-primary section_edit_submit',
+      }],
+      defaultView: 'text',
+    });
   });
 </script>
 <% end %>

@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -205,7 +205,7 @@ module ApplicationHelper
 
   def build_solr_request_from_response
     qs = @response['responseHeader']['params'].reject { |k,v| k == 'wt' }.collect do |k,v|
-      v.is_a?(Array) ? v.collect { |v1| [k,URI.encode(v1.to_s)].join('=') } : [k,URI.encode(v.to_s)].join('=')
+      v.is_a?(Array) ? v.collect { |v1| [k, Addressable::URI.escape(v1.to_s)].join('=') } : [k, Addressable::URI.escape(v.to_s)].join('=')
     end.flatten.join('&')
     ActiveFedora.solr.conn.uri.merge("select?#{qs}").to_s.html_safe
   end
@@ -217,6 +217,7 @@ module ApplicationHelper
 
   def truncate_center label, output_label_length, end_length = 0
     end_length = output_label_length / 2 - 3 if end_length == 0
+    end_length = 0 if end_length.negative?
     truncate(label, length: output_label_length,
       omission: "...#{label.last(end_length)}")
   end

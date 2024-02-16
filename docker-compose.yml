@@ -13,7 +13,7 @@ networks:
 
 services:
   db: &db-avalon
-    image: postgres:10-alpine
+    image: postgres:14-alpine
     volumes:
       - database:/data
     environment:
@@ -42,12 +42,11 @@ services:
     volumes: []
 
   solr: &solr
-    image: solr:6.6.4-alpine
+    image: solr:8-slim
     volumes:
-      - ./solr/config:/opt/solr/avalon_conf
-      - solr:/opt/solr/server/solr/mycores
-    entrypoint:
-      - docker-entrypoint.sh
+      - ./solr/conf:/opt/solr/avalon_conf
+      - solr:/var/solr
+    command:
       - solr-precreate
       - avalon
       - /opt/solr/avalon_conf
@@ -56,7 +55,7 @@ services:
   solr-test:
     <<: *solr
     volumes:
-      - ./solr/config:/opt/solr/avalon_conf
+      - ./solr/conf:/opt/solr/avalon_conf
 
   hls:
     image: avalonmediasystem/nginx:minio
@@ -77,7 +76,7 @@ services:
     <<: *redis
 
   avalon: &avalon
-    image: avalonmediasystem/avalon:7.2.1-slim-dev-20210503
+    image: avalonmediasystem/avalon:7.4.0-dev
     build:
       context: .
       target: dev
@@ -91,19 +90,22 @@ services:
       - minio
     environment:
       - APP_NAME=avalon
-      - SETTINGS__DOMAIN=http://localhost:3000
       - BUNDLE_FLAGS=--with development postgres --without production test
       - ENCODE_WORK_DIR=/tmp
       - CONTROLLED_VOCABULARY=config/controlled_vocabulary.yml
       - DATABASE_URL=postgres://postgres:password@db/avalon
+      - DATABASE_CLEANER_ALLOW_REMOTE_DATABASE_URL=true
       - FEDORA_NAMESPACE=avalon
       - FEDORA_URL=http://fedoraAdmin:fedoraAdmin@fedora:8080/fedora/rest
       - RAILS_ENV=development
+      - RAILS_ADDITIONAL_HOSTS=avalon
       - SETTINGS__REDIS__HOST=redis
       - SETTINGS__REDIS__PORT=6379
       - SECRET_KEY_BASE=abcd
       - SOLR_URL=http://solr:8983/solr/avalon
       - AWS_REGION=us-east-1
+      - SETTINGS__ACTIVE_STORAGE__BUCKET=supplementalfiles
+      - SETTINGS__ACTIVE_STORAGE__SERVICE=generic_s3
       - SETTINGS__FFMPEG__PATH=/usr/bin/ffmpeg
       - SETTINGS__MINIO__ENDPOINT=http://minio:9000
       - SETTINGS__MINIO__PUBLIC_HOST=http://localhost:9000
@@ -114,7 +116,7 @@ services:
       - SETTINGS__DROPBOX__PATH=s3://masterfiles/dropbox/
       - SETTINGS__DROPBOX__UPLOAD_URI=s3://masterfiles/dropbox/
       - SETTINGS__MASTER_FILE_MANAGEMENT__PATH=s3://preserves/
-      - SETTINGS__MASTER_FILE_MANAGEMENT__STRATEGY=MOVE
+      - SETTINGS__MASTER_FILE_MANAGEMENT__STRATEGY=move
       - SETTINGS__STREAMING__CONTENT_PATH=/
       - SETTINGS__STREAMING__STREAM_DEFAULT_QUALITY=medium
       - SETTINGS__STREAMING__HTTP_BASE=http://localhost:8880/avalon
@@ -143,6 +145,7 @@ services:
       - redis-test
     environment:
       - DATABASE_URL=postgresql://postgres:password@db-test/avalon
+      - SETTINGS__FFMPEG__PATH=/usr/bin/ffmpeg
       - SETTINGS__REDIS__HOST=redis-test
       - SETTINGS__REDIS__PORT=6379
       - FEDORA_URL=http://fedora-test:8080/fedora/rest
@@ -183,7 +186,7 @@ services:
     entrypoint: >
       /bin/sh -c "
       /usr/bin/mc config host add myminio http://minio:9000 minio minio123;
-      /usr/bin/mc mb -p myminio/fcrepo myminio/masterfiles myminio/derivatives myminio/supplementalfiles;
+      /usr/bin/mc mb -p myminio/fcrepo myminio/masterfiles myminio/derivatives myminio/supplementalfiles myminio/preserves;
       /usr/bin/mc policy set download myminio/derivatives;
       /usr/bin/mc policy set download myminio/supplementalfiles;
       exit 0;

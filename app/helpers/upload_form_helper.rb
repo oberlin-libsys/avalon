@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -18,7 +18,7 @@ module UploadFormHelper
   end
 
   def upload_form_classes
-    result = %w(uploader-form form-horizontal step)
+    result = %w(uploader-form step)
     result << 'directupload' if direct_upload?
     result.join(' ')
   end
@@ -27,13 +27,14 @@ module UploadFormHelper
     if direct_upload?
       bucket = Aws::S3::Bucket.new(name: Settings.encoding.masterfile_bucket)
       direct_post = bucket.presigned_post(key: "uploads/#{SecureRandom.uuid}/${filename}", success_action_status: '201')
+      upload_form_url = direct_post.url
       if Settings.minio.present? && Settings.minio.public_host.present?
-        direct_post.url.sub!(Settings.minio.endpoint, Settings.minio.public_host)
+        upload_form_url = direct_post.url.sub(Settings.minio.endpoint, Settings.minio.public_host)
       end
       {
         'form-data' => (direct_post.fields),
-        'url' => direct_post.url,
-        'host' => URI.parse(direct_post.url).host
+        'url' => upload_form_url,
+        'host' => Addressable::URI.parse(upload_form_url).host
       }
     else
       {}

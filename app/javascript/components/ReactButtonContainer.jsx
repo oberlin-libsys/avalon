@@ -7,21 +7,25 @@ class ReactButtonContainer extends Component {
   constructor(props) {
     super(props);
 
+    const {
+      baseURL,
+      masterFileID,
+      mediaObjectID,
+      canvasIndex,
+    } = this.props;
     this.state = {
       show: false,
       smeProps: {
-        masterFileID: this.props.masterFileID,
-        baseURL: this.props.baseURL,
-        initStructure: this.props.initStructure,
-        audioStreamURL: this.props.audioStreamURL,
-        streamDuration: this.props.streamDuration
+        structureURL: baseURL + '/master_files/' + masterFileID + '/structure.json',
+        manifestURL: baseURL + '/media_objects/' + mediaObjectID + '/manifest.json',
+        canvasIndex: canvasIndex,
       },
       structureSaved: true
     };
   }
 
   handleClose = () => {
-    if(!this.state.structureSaved) {
+    if (!this.state.structureSaved) {
       if (confirm("Unsaved changes will be lost. Are you sure?")) {
         this.setState({
           show: false
@@ -43,20 +47,27 @@ class ReactButtonContainer extends Component {
 
   getStructureStatus = (value) => {
     this.setState({ structureSaved: value });
-  }
+  };
 
   render() {
-    const modalID = `edit_structure_${this.props.sectionIndex}`;
+    const modalID = `edit_structure_${this.props.canvasIndex}`;
     return (
       <div className="ReactButtonContainer">
         <button
-          className="btn btn-primary btn-xs btn-edit"
+          className="btn btn-primary btn-struct btn-edit mr-1"
           onClick={this.handleShow}
         >
           Edit Structure
         </button>
 
-        <Modal id={modalID} show={this.state.show} animation={false} onHide={this.handleClose} backdrop="static" className="sme-modal-wrapper" dialogClassName="modal-wrapper-body">
+        <Modal
+          id={modalID}
+          show={this.state.show}
+          animation={false}
+          onHide={this.handleClose}
+          backdrop="static"
+          className="sme-modal-wrapper"
+          dialogClassName="modal-wrapper-body">
           <Modal.Header closeButton>
             <Modal.Title>Edit Structure</Modal.Title>
           </Modal.Header>

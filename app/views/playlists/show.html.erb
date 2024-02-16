@@ -1,5 +1,5 @@
 <%#
-Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+Copyright 2011-2023, The Trustees of Indiana University and Northwestern
   University.  Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
 
@@ -29,7 +29,7 @@ Unless required by applicable law or agreed to in writing, software distributed
     </div>
 
     <% if first_playable_item.nil? %>
-    <%= image_tag "media-placeholder.png", :class => "img-responsive" %>
+    <%= image_tag "media-placeholder.png", :class => "img-fluid" %>
     <% else %>
     <% position = first_playable_item.position %>
     <% @current_playlist_item = first_playable_item %>

@@ -1,5 +1,5 @@
 <%#
-Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+Copyright 2011-2023, The Trustees of Indiana University and Northwestern
   University.  Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
 
@@ -13,11 +13,15 @@ Unless required by applicable law or agreed to in writing, software distributed
   specific language governing permissions and limitations under the License.
 ---  END LICENSE_HEADER BLOCK  ---
 %>
+<% unless ModsDocument::IDENTIFIER_TYPES && ModsDocument::NOTE_TYPES && ModsDocument::RIGHTS_STATEMENTS %>
+  <% raise Avalon::VocabularyNotFound.new "Rights statements, Identifier types, or Note types vocabulary not found." %>
+<% end %>
+
 <div id="metadata_header">
   <ul class="nav nav-tabs">
-    <li class="active"><a href="#details-tab" data-toggle="tab">Details</a></li>
+    <li class="nav-item"><a href="#details-tab" data-toggle="tab" class="nav-link active">Details</a></li>
     <% if @media_object.supplemental_files.present? || @masterFiles.any? { |section| section.supplemental_files.present? } %>
-      <li><a href="#files-tab" data-toggle="tab">Files</a></li>
+      <li class="nav-item"><a href="#files-tab" data-toggle="tab" class="nav-link">Files</a></li>
     <% end %>
   </ul>
   <div class="tab-content">
@@ -65,25 +69,28 @@ Unless required by applicable law or agreed to in writing, software distributed
     <% end %>
   </div>
 
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h3 class="panel-title">
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3 class="card-title">
         Access Restrictions
       </h3>
     </div>
-    <div class="panel-body">
-      <%= @media_object.access_text %>
+    <div class="card-body">
+      <%= @media_object.access_text %> <br />
+      <% if lending_enabled?(@media_object) %>
+        Lending Period: <%= ActiveSupport::Duration.build(@media_object.lending_period).to_day_hour_s %>
+      <% end %>
     </div>
   </div>
 
   <% if can? :inspect, @media_object %>
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h3 class="panel-title">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">
         <%= link_to 'Fedora Objects', "#object_tree", :id => 'show_object_tree', role: "button", "data-toggle":"collapse", "aria-expanded": "false", "aria-controls": "object_tree" %>
       </h3>
     </div>
-    <div class="panel-body collapse" id="object_tree" data-src="<%=tree_media_object_path(@media_object.id)%>"></div>
+    <div class="card-body collapse" id="object_tree" data-src="<%=tree_media_object_path(@media_object.id)%>"></div>
   </div>
   <% end %>
 

@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -29,8 +29,8 @@ describe AvalonMarkerController, type: :controller do
     let(:playlist_item) { FactoryBot.create(:playlist_item, playlist: playlist) }
     context 'with unauthenticated user' do
       it "all routes should redirect to sign in" do
-        expect(post :create, params: { marker: { playlist_item_id: playlist_item.id, master_file_id: master_file.id, title: Faker::Lorem.word, start_time: 0.0 } }).to redirect_to(/#{Regexp.quote(new_user_session_path)}\?url=.*/)
-        expect(put :update, params: { id: avalon_marker.id, marker: { title: Faker::Lorem.word } }).to redirect_to(/#{Regexp.quote(new_user_session_path)}\?url=.*/)
+        expect(post :create, params: { marker: { playlist_item_id: playlist_item.id, master_file_id: master_file.id, title: Faker::Lorem.word, start_time: 0.0 } }).to render_template('errors/restricted_pid')
+        expect(put :update, params: { id: avalon_marker.id, marker: { title: Faker::Lorem.word } }).to render_template('errors/restricted_pid')
       end
     end
     context 'with end-user' do

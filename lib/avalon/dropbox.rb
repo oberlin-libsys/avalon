@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -24,7 +24,8 @@ module Avalon
 
     # Returns available files in the dropbox
     def all
-      return nil if @base_directory.blank? or not Dir.exists?(@base_directory)
+      FileUtils.mkdir_p @base_directory
+      return nil if @base_directory.blank? or not Dir.exist?(@base_directory)
       contents = Dir.entries(@base_directory).reject { |fn| fn.start_with?('.') }
       open_files = find_open_files(contents)
       files = []
@@ -51,7 +52,7 @@ module Avalon
     # Compares id against hash of each file's full path and return the path that matches
     # Pretty horrible, should destroy
     def find(id)
-      return nil if @base_directory.blank? or not Dir.exists?(@base_directory)
+      return nil if @base_directory.blank? or not Dir.exist?(@base_directory)
 
       Dir.entries(@base_directory).each do |path|
         full_path = File.join( @base_directory, path)

@@ -1,5 +1,5 @@
 <%#
-Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+Copyright 2011-2023, The Trustees of Indiana University and Northwestern
   University.  Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
 
@@ -15,7 +15,7 @@ Unless required by applicable law or agreed to in writing, software distributed
 %>
 
 <div id="timeline-button" style="display: inline-block;">
-  <button type="button" class="btn btn-default" id="timeline-btn" data-toggle="modal" data-target="#timelineModal" style="margin-top: 10px;" disabled >
+  <button type="button" class="btn btn-outline" id="timeline-btn" data-toggle="modal" data-target="#timelineModal" style="margin-top: 10px;" disabled >
     Create Timeline
   </button>
 </div>
@@ -38,7 +38,7 @@ Unless required by applicable law or agreed to in writing, software distributed
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-outline" data-dismiss="modal">Close</button>
         <button type="button" class="btn btn-primary" id="timelineModalSave">Create Timeline</button>
       </div>
     </div>
@@ -82,13 +82,6 @@ $(document).ready(function() {
     bodyText += "<input type=\"text\" name=\"customend\" id=\"customend\" size=\"10\" value=\""+ mejs.Utils.secondsToTimeCode(currentPlayer.duration, true)+"\" \>"
     bodyText += "</div>"
     $modalBody.innerHTML = bodyText;
-    // Disable ME.js keyboard shortcuts when timeline modal is shown
-    currentPlayer.options.enableKeyboard = false;
-  })
-
-  $('#timelineModal').on('hidden.bs.modal', function(e) {
-    // Enable ME.js keyboard shortcuts when create timeline modal closes
-    currentPlayer.options.enableKeyboard = true;
   })
 
   $('#timelineModalSave').on('click', function (e) {

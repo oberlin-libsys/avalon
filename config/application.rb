@@ -8,7 +8,7 @@ require 'resolv-replace'
 Bundler.require(*Rails.groups)
 
 module Avalon
-  VERSION = '7.2.1'
+  VERSION = '7.6.0'
 
   class Application < Rails::Application
     require 'avalon/configuration'
@@ -18,7 +18,7 @@ module Avalon
     end
 
     # Initialize configuration defaults for originally generated Rails version.
-    config.load_defaults 5.1
+    config.load_defaults 6.0
 
     # Settings in config/environments/* take precedence over those specified here.
     # Application configuration should go into files in config/initializers
@@ -32,18 +32,23 @@ module Avalon
     # config.i18n.load_path += Dir[Rails.root.join('my', 'locales', '*.{rb,yml}').to_s]
     # config.i18n.default_locale = :de
 
+    # config.eager_load_paths << Rails.root.join("extras")
+
     config.active_job.queue_adapter = :sidekiq
 
     config.action_dispatch.default_headers = { 'X-Frame-Options' => 'ALLOWALL' }
 
     config.middleware.insert_before 0, Rack::Cors do
       allow do
-        origins '*'
+        origins { |source| true }
         resource '/media_objects/*/manifest*', headers: :any, methods: [:get]
         resource '/master_files/*/thumbnail', headers: :any, methods: [:get]
+        resource '/master_files/*/transcript/*/*', headers: :any, methods: [:get]
         resource '/master_files/*/structure.json', headers: :any, methods: [:get, :post, :delete]
         resource '/master_files/*/waveform.json', headers: :any, methods: [:get]
-        resource '/master_files/*/*.m3u8', headers: :any, methods: [:get, :head]
+        resource '/master_files/*/*.m3u8', headers: :any, credentials: true, methods: [:get, :head]
+        resource '/master_files/*/caption_manifest', headers: :any, methods: [:get]
+        resource '/master_files/*/captions', headers: :any, methods: [:get]
         resource '/timelines/*/manifest.json', headers: :any, methods: [:get, :post]
       end
     end

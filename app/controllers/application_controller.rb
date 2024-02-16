@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -30,10 +30,9 @@ class ApplicationController < ActionController::Base
   helper_method :render_bookmarks_control?
 
   around_action :handle_api_request, if: proc{|c| request.format.json? || request.format.atom? }
-  before_action :rewrite_v4_ids, if: proc{|c| request.method_symbol == :get && [params[:id], params[:content]].compact.any? { |i| i =~ /^[a-z]+:[0-9]+$/}}
+  before_action :rewrite_v4_ids, if: proc{|c| request.method_symbol == :get && [params[:id], params[:content]].flatten.compact.any? { |i| i =~ /^[a-z]+:[0-9]+$/}}
   before_action :set_no_cache_headers, if: proc{|c| request.xhr? }
   prepend_before_action :remove_zero_width_chars
-  skip_after_action :discard_flash_if_xhr # Suppress overwhelming Blacklight deprecation warning
 
   def set_no_cache_headers
     response.headers["Cache-Control"] = "no-cache, no-store"
@@ -48,16 +47,20 @@ class ApplicationController < ActionController::Base
   end
 
   def rewrite_v4_ids
-    return if params[:controller] =~ /migration/
-
     params.permit!
-    new_id = ActiveFedora::SolrService.query(%{identifier_ssim:"#{params[:id]}"}, rows: 1, fl: 'id').first['id']
+    query_result = ActiveFedora::SolrService.query(%{identifier_ssim:"#{params[:id]}"}, rows: 1, fl: 'id')
+
+    raise ActiveFedora::ObjectNotFoundError if query_result.empty?
+
+    new_id = query_result.first['id']
     new_content_id = params[:content] ? ActiveFedora::SolrService.query(%{identifier_ssim:"#{params[:content]}"}, rows: 1, fl: 'id').first['id'] : nil
     redirect_to(url_for(params.merge(id: new_id, content: new_content_id)))
   end
 
   def store_location
-    store_location_for(:user, request.url)
+    if should_store_return_url?
+      store_location_for(:user, request.url)
+    end
     if request.env["omniauth.params"].present? && request.env["omniauth.params"]["login_popup"].present?
       session[:previous_url] = root_path + "self_closing.html"
     end
@@ -73,13 +76,13 @@ class ApplicationController < ActionController::Base
 
   # Used here and in omniauth_callbacks_controller
   def find_redirect_url(auth_type, lti_group: nil)
-    previous_url = session.delete :previous_url
+    previous_url = session.delete(:previous_url) || session.delete(:user_return_to)
     if params['target_id']
       # Whitelist params that are allowed to be passed through via LTI
       objects_path(params['target_id'], params.permit('t', 'position', 'token'))
     elsif params[:url]
       # Limit redirects to current host only (Fixes bug https://bugs.dlib.indiana.edu/browse/VOV-5662)
-      uri = URI.parse(params[:url])
+      uri = Addressable::URI.parse(params[:url])
       request.host == uri.host ? uri.path : root_path
     elsif auth_type == 'lti' && lti_group.present?
       search_catalog_path('f[read_access_virtual_group_ssim][]' => lti_group)
@@ -100,6 +103,7 @@ class ApplicationController < ActionController::Base
         sign_in user, event: :authentication
         user_session[:json_api_login] = true
         user_session[:full_login] = false
+        user_session[:virtual_groups] = user.ldap_groups
       else
         render json: {errors: ["Permission denied."]}, status: 403
         return
@@ -158,7 +162,7 @@ class ApplicationController < ActionController::Base
     if request.format == :json
       head :unauthorized
     else
-      session[:previous_url] = request.fullpath unless request.xhr?
+      store_location_for(:user, request.fullpath) if should_store_return_url?
       render '/errors/restricted_pid', status: :unauthorized
     end
   end
@@ -174,8 +178,11 @@ class ApplicationController < ActionController::Base
   rescue_from Ldp::Gone do |exception|
     if request.format == :json
       render json: {errors: ["#{params[:id]} has been deleted"]}, status: 410
-    else
+    elsif request.format == :html
       render '/errors/deleted_pid', status: 410
+    else
+      # m3u8 request
+      head 410
     end
   end
 
@@ -194,8 +201,8 @@ class ApplicationController < ActionController::Base
     if request.format == :json
       head :unauthorized
     else
-      session[:previous_url] = request.fullpath unless request.xhr?
-      redirect_to new_user_session_path(url: request.url), flash: { notice: 'You need to login to perform this action.' }
+      store_location_for(:user, request.fullpath) if should_store_return_url?
+      render '/errors/restricted_pid', status: :unauthorized
     end
   end
 
@@ -233,5 +240,9 @@ class ApplicationController < ActionController::Base
       else
         obj
       end
+    end
+
+    def should_store_return_url?
+      !(request.xhr? || request.format != "html" || request.path.start_with?("/users/") || request.path.end_with?("poster") || request.path.end_with?("thumbnail"))
     end
 end

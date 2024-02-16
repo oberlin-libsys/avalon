@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -37,6 +37,15 @@ class IiifCanvasPresenter
     master_file.is_video? ? video_content : audio_content
   end
 
+  def sequence_rendering
+    [{
+      "@id" => "#{@master_file.waveform_master_file_url(@master_file.id)}.json",
+      "type" => "Dataset",
+      "label" => { "en" => ["waveform.json"] },
+      "format" => "application/json"
+    }]
+  end
+
   private
 
     def video_content
@@ -51,6 +60,7 @@ class IiifCanvasPresenter
                                            height: master_file.height.to_i,
                                            duration: stream_info[:duration],
                                            type: 'Video',
+                                           format: 'application/x-mpegURL',
                                            auth_service: auth_service(quality))
     end
 
@@ -63,6 +73,7 @@ class IiifCanvasPresenter
                                            label: quality,
                                            duration: stream_info[:duration],
                                            type: 'Sound',
+                                           format: 'application/x-mpegURL',
                                            auth_service: auth_service(quality))
     end
 
@@ -72,10 +83,10 @@ class IiifCanvasPresenter
       end
     end
 
-    def simple_iiif_range
+    def simple_iiif_range(label = stream_info[:embed_title])
       # TODO: embed_title?
       IiifManifestRange.new(
-        label: { '@none'.to_sym => [stream_info[:embed_title]] },
+        label: { "none" => [label] },
         items: [
           IiifCanvasPresenter.new(master_file: master_file, stream_info: stream_info, media_fragment: 't=0,')
         ]
@@ -95,12 +106,8 @@ class IiifCanvasPresenter
         end
       end
 
-      # if a non-leaf node has no valid "Div" or "Span" children, then it would become empty range node containing no canvas
-      # raise an exception here as this error shall have been caught and handled by the parser and shall never happen here
-      raise Nokogiri::XML::SyntaxError, "Empty root or Div node: #{div_node[:label]}" if items.empty?
-
       IiifManifestRange.new(
-        label: { '@none' => [div_node[:label]] },
+        label: { "none" => [div_node[:label]] },
         items: items
       )
     end
@@ -108,7 +115,7 @@ class IiifCanvasPresenter
     def span_to_iiif_range(span_node)
       fragment = "t=#{parse_hour_min_sec(span_node[:begin])},#{parse_hour_min_sec(span_node[:end])}"
       IiifManifestRange.new(
-        label: { '@none' => [span_node[:label]] },
+        label: { "none" => [span_node[:label]] },
         items: [
           IiifCanvasPresenter.new(master_file: master_file, stream_info: stream_info, media_fragment: fragment)
         ]
@@ -133,7 +140,11 @@ class IiifCanvasPresenter
       # in which case SyntaxError shall be prompted to the user during file upload.
       # This can be done by defining some XML schema to require that at least one Div/Span child node exists
       # under root or each Div node, otherwise Nokogiri::XML parser will report error, and raise exception here.
-      @structure_ng_xml ||= (s = master_file.structuralMetadata.content).nil? ? Nokogiri::XML(nil) : Nokogiri::XML(s)
+      @structure_ng_xml ||= if master_file.has_structuralMetadata?
+                              Nokogiri::XML(master_file.structuralMetadata.content)
+                            else
+                              Nokogiri::XML(nil)
+                            end
     end
 
     def auth_service(quality)

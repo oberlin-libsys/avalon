@@ -26,6 +26,16 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :checkouts, only: [:index, :create, :show, :update, :destroy], :constraints => lambda { |request| Avalon::Configuration.controlled_digital_lending_enabled? } do
+    collection do
+      patch :return_all
+    end
+
+    member do
+      patch :return
+    end
+  end
+
   resources :bookmarks do
     concerns :exportable
 
@@ -45,10 +55,11 @@ Rails.application.routes.draw do
       post 'intercom_push'
       get 'merge'
       post 'merge'
+      get 'count', constraints: { format: 'json' }
     end
   end
 
-  devise_for :users, controllers: { omniauth_callbacks: 'users/omniauth_callbacks', sessions: 'users/sessions' }, format: false
+  devise_for :users, controllers: { omniauth_callbacks: 'users/omniauth_callbacks', sessions: 'users/sessions' }
   devise_scope :user do
     match '/users/auth/:provider', to: 'users/omniauth_callbacks#passthru', as: :user_omniauth_authorize, via: [:get, :post]
     Avalon::Authentication::Providers.collect { |provider| provider[:provider] }.uniq.each do |provider_name|
@@ -143,13 +154,16 @@ Rails.application.routes.draw do
       get :embed
       post 'attach_structure'
       post 'attach_captions'
+      delete 'captions', action: :delete_captions, as: 'delete_captions'
       get :captions
       get :waveform
       match ':quality.m3u8', to: 'master_files#hls_manifest', via: [:get], as: :hls_manifest
+      get 'caption_manifest'
       get 'structure', to: 'master_files#structure', constraints: { format: 'json' }
       post 'structure', to: 'master_files#set_structure', constraints: { format: 'json' }
       delete 'structure', to: 'master_files#delete_structure', constraints: { format: 'json' }
       post 'move'
+      get 'transcript/:t_id', to: 'master_files#transcript'
     end
 
     # Supplemental Files
@@ -194,7 +208,7 @@ Rails.application.routes.draw do
     member do
       patch 'regenerate_access_token'
       post 'manifest', to: 'timelines#manifest_update', constraints: { format: 'json' }
-      get 'manifest', constraints: { format: 'json' }
+      get 'manifest'
     end
     collection do
       post 'duplicate'
@@ -225,4 +239,12 @@ Rails.application.routes.draw do
     mount Sidekiq::Web, at: '/jobs', as: 'jobs'
   end
   get '/jobs(.:format)', to: redirect('/')
+
+  scope :persona, as: 'persona' do
+    resources :users, only: [:paged_index], controller: 'samvera/persona/users' do
+      collection do
+        post 'paged_index'
+      end
+    end
+  end
 end

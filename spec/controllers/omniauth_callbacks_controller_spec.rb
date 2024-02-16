@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -15,8 +15,27 @@
 require 'rails_helper'
 
 describe Users::OmniauthCallbacksController, type: :controller do
+  let(:identity_params) do
+    {
+      on_login: AuthFormsController.action(:render_identity_request_form),
+      on_registration: AuthFormsController.action(:render_identity_registration_form),
+      on_failed_registration: AuthFormsController.action(:render_form_with_errors),
+      fields: [:email]
+    }
+  end
+
   before do
     @request.env["devise.mapping"] = Devise.mappings[:user]
+  end
+
+  around do |example|
+    @old_configs = Devise.omniauth_configs
+    Devise.omniauth(:identity, identity_params)
+    Rails.application.reload_routes!
+
+    example.run
+    Devise.class_variable_set(:@@omniauth_configs, @old_configs)
+    Rails.application.reload_routes!
   end
 
   describe '#find_user' do
@@ -37,7 +56,7 @@ describe Users::OmniauthCallbacksController, type: :controller do
 
       it 'redirects to url without params' do
         post :identity, params: params
-        expect(response).to redirect_to(URI.parse(url).path)
+        expect(response).to redirect_to(Addressable::URI.parse(url).path)
       end
 
       context "and does not match app host" do
@@ -56,7 +75,7 @@ describe Users::OmniauthCallbacksController, type: :controller do
 
       it 'returns self-closing page' do
         post :identity, params: params
-        expect(response.content_type).to eq 'text/html'
+        expect(response.content_type).to eq 'text/html; charset=utf-8'
         expect(response.body).to eq self_closing_html
       end
     end
@@ -100,6 +119,15 @@ describe Users::OmniauthCallbacksController, type: :controller do
       end
     end
 
+    context 'when user_return_to is in the session' do
+      let(:previous_url) { "http://test.host/a/sub/page?test_param=true" }
+
+      it 'redirects to url' do
+        post :identity, session: { user_return_to: previous_url }
+        expect(response).to redirect_to(previous_url)
+      end
+    end
+
     context 'when lti login with course group' do
       let(:course_group) { 'M101-Fall2019' }
       let(:lti_auth_double) { double() }
@@ -133,6 +161,24 @@ describe Users::OmniauthCallbacksController, type: :controller do
       it 'redirects to root path' do
         post :lti, session: { lti_group: course_group }
         expect(response).to redirect_to(root_path)
+      end
+    end
+
+    context 'when lti has a broken signature' do
+      let(:course_group) { 'M101-Fall2019' }
+      let(:lti_auth_double) { double() }
+      let(:lti_extra_info) { double() }
+
+      before do
+        allow(User).to receive(:find_for_lti).and_return(user)
+        @request.env["omniauth.auth"] = lti_auth_double
+        allow(lti_auth_double).to receive(:extra).and_raise (OAuth::Signature::UnknownSignatureMethod)
+      end
+
+      it 'should rescue the error' do
+        expect { get :lti, session: { lti_group: course_group } }.not_to raise_error
+        expect(response).to redirect_to(root_path)
+        expect(flash[:error]).to be_present
       end
     end
   end

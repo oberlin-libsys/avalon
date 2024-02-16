@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -17,7 +17,7 @@ require 'cancan/matchers'
 
 describe MediaObject do
   let(:media_object) { FactoryBot.create(:media_object) }
-  
+
   it 'assigns a noid id' do
     media_object = MediaObject.new
     expect { media_object.assign_id! }.to change { media_object.id }.from(nil).to(String)
@@ -78,14 +78,14 @@ describe MediaObject do
           '[1667,1668,1670..1672]' => ['1667','1668','1670','1671','1672'],
           '{1667,1668,1670..1672}' => ['1667','1668','1670','1671','1672'],
           '159u' => ['1590','1591','1592','1593','1594','1595','1596','1597','1598','1599'],
-          '159u-12' => [],
+          '159u-12' => ['1590','1591','1592','1593','1594','1595','1596','1597','1598','1599'],
           '159u-12-25' => ['1590','1591','1592','1593','1594','1595','1596','1597','1598','1599'],
           '159x' => ['1590','1591','1592','1593','1594','1595','1596','1597','1598','1599'],
           '2011-(06-04)~' => ['2011'],
           'unknown/unknown' => ['Unknown']
         }}
       it "should not accept invalid EDTF formatted dates" do
-        [Faker::Lorem.sentence(4),'-999','17000'].each do |d|
+        [Faker::Lorem.sentence(word_count: 4),'-999','17000'].each do |d|
           media_object.date_issued = d
           expect(media_object.valid?).to be_falsey
           expect(media_object.errors[:date_issued].present?).to be_truthy
@@ -455,22 +455,39 @@ describe MediaObject do
   end
 
   describe '#calculate_duration' do
-    it 'returns zero if there are zero master files' do
-      expect(media_object.send(:calculate_duration)).to eq(0)
+    let(:master_file1) { FactoryBot.create(:master_file, media_object: media_object, duration: '40') }
+    let(:master_file2) { FactoryBot.create(:master_file, media_object: media_object, duration: '40') }
+    let(:master_file3) { FactoryBot.create(:master_file, media_object: media_object, duration: nil) }
+    let(:master_files) { [] }
+
+    before do
+      master_files
+      # Explicitly run indexing job to ensure fields are indexed for structure searching
+      MediaObjectIndexingJob.perform_now(media_object.id)
     end
-    it 'returns the correct duration with two master files' do
-      media_object.ordered_master_files += [FactoryBot.create(:master_file, duration: '40')]
-      media_object.ordered_master_files += [FactoryBot.create(:master_file, duration: '40')]
-      expect(media_object.send(:calculate_duration)).to eq(80)
+
+    context 'with zero master files' do
+      it 'returns zero' do
+	expect(media_object.send(:calculate_duration)).to eq(0)
+      end
     end
-    it 'returns the correct duration with two master files one nil' do
-      media_object.ordered_master_files += [FactoryBot.create(:master_file, duration: '40')]
-      media_object.ordered_master_files += [FactoryBot.create(:master_file, duration:nil)]
-      expect(media_object.send(:calculate_duration)).to eq(40)
+    context 'with two master files' do
+      let(:master_files) { [master_file1, master_file2] }
+      it 'returns the correct duration' do
+	expect(media_object.send(:calculate_duration)).to eq(80)
+      end
     end
-    it 'returns the correct duration with one master file that is nil' do
-      media_object.ordered_master_files += [FactoryBot.create(:master_file, duration:nil)]
-      expect(media_object.send(:calculate_duration)).to eq(0)
+    context 'with two master files one nil' do
+      let(:master_files) { [master_file1, master_file3] }
+      it 'returns the correct duration' do
+	expect(media_object.send(:calculate_duration)).to eq(40)
+      end
+    end
+    context 'with one master file that is nil' do
+      let(:master_files) { [master_file3] }
+      it 'returns the correct duration' do
+	expect(media_object.send(:calculate_duration)).to eq(0)
+      end
     end
   end
 
@@ -561,13 +578,13 @@ describe MediaObject do
     it 'should index identifier for master files' do
       master_file = FactoryBot.create(:master_file, identifier: ['TestOtherID'], media_object: media_object)
       media_object.reload
-      solr_doc = media_object.to_solr
+      solr_doc = media_object.to_solr(include_child_fields: true)
       expect(solr_doc['other_identifier_sim']).to include('TestOtherID')
     end
     it 'should index labels for master files' do
       FactoryBot.create(:master_file, :with_structure, media_object: media_object, title: 'Test Label')
       media_object.reload
-      solr_doc = media_object.to_solr
+      solr_doc = media_object.to_solr(include_child_fields: true)
       expect(solr_doc['section_label_tesim']).to include('CD 1')
       expect(solr_doc['section_label_tesim']).to include('Test Label')
     end
@@ -576,7 +593,7 @@ describe MediaObject do
       media_object.comment = ['MO Comment']
       media_object.save!
       media_object.reload
-      solr_doc = media_object.to_solr
+      solr_doc = media_object.to_solr(include_child_fields: true)
       expect(solr_doc['all_comments_sim']).to include('MO Comment')
       expect(solr_doc['all_comments_sim']).to include('[Test Label] MF Comment 1')
       expect(solr_doc['all_comments_sim']).to include('[Test Label] MF Comment 2')
@@ -770,7 +787,7 @@ describe MediaObject do
 
   describe '#collection=' do
     let(:new_media_object) { MediaObject.new }
-    let(:collection) { FactoryBot.create(:collection, default_hidden: true, default_read_users: ['archivist1@example.com'], default_read_groups: ['TestGroup', 'public'])}
+    let(:collection) { FactoryBot.create(:collection, default_hidden: true, default_read_users: ['archivist1@example.com'], default_read_groups: ['TestGroup', 'public'], default_lending_period: 86400)}
 
     it 'sets hidden based upon collection for new media objects' do
       expect {new_media_object.collection = collection}.to change {new_media_object.hidden?}.to(true).from(false)
@@ -785,11 +802,15 @@ describe MediaObject do
       expect(new_media_object.read_groups).not_to include "TestGroup"
       expect {new_media_object.collection = collection}.to change {new_media_object.read_groups}.to include 'TestGroup'
     end
+    it 'sets lending_period based upon collection for new media objects' do
+      expect {new_media_object.collection = collection}.to change {new_media_object.lending_period}.to(86400).from(nil)
+    end
     it 'does not change access control fields if not new media object' do
       expect {media_object.collection = collection}.not_to change {new_media_object.hidden?}
       expect {media_object.collection = collection}.not_to change {new_media_object.visibility}
       expect {media_object.collection = collection}.not_to change {new_media_object.read_users}
       expect {media_object.collection = collection}.not_to change {new_media_object.read_users}
+      expect {media_object.collection = collection}.not_to change {new_media_object.lending_period}
     end
   end
 
@@ -929,7 +950,7 @@ describe MediaObject do
 
   describe '#merge!' do
     let(:media_objects) { [] }
-    
+
     before do
       2.times { media_objects << FactoryBot.create(:media_object, :with_master_file) }
     end
@@ -1006,4 +1027,69 @@ describe MediaObject do
   end
 
   it_behaves_like "an object that has supplemental files"
+
+  describe 'lending_status' do
+    it 'is available when no active checkouts' do
+      expect(media_object.lending_status).to eq "available"
+    end
+
+    context 'with an active checkout' do
+      before { FactoryBot.create(:checkout, media_object_id: media_object.id) }
+
+      it 'is checked_out' do
+        expect(media_object.lending_status).to eq "checked_out"
+      end
+    end
+  end
+
+  describe 'lending_period' do
+    context 'there is not a custom lending period' do
+      it 'sets the lending period to the system default' do
+        expect(media_object.lending_period).to eq ActiveSupport::Duration.parse(Settings.controlled_digital_lending.default_lending_period).to_i
+      end
+    end
+    context 'the parent collection has a custom lending period' do
+      let(:collection) { FactoryBot.create(:collection, default_lending_period: 86400) }
+      let(:media_object) { FactoryBot.create(:media_object, collection_id: collection.id) }
+      it "sets the lending period to equal the collection's default lending period" do
+        expect(media_object.lending_period).to eq collection.default_lending_period
+      end
+      context 'the media object has a custom lending period' do
+        let(:media_object) { FactoryBot.create(:media_object, collection_id: collection.id, lending_period: 172800)}
+        it "leaves the lending period equal to the custom value" do
+          expect(media_object.lending_period).to eq 172800
+        end
+      end
+    end
+  end
+
+  describe 'read_groups=' do
+    let(:solr_doc) { ActiveFedora::SolrService.query("id:#{media_object.id}").first }
+
+    context 'when creating a MediaObject' do
+      let(:media_object) { FactoryBot.build(:media_object) }
+
+      it 'saves and indexes' do
+        expect(media_object.read_groups).to be_empty
+        media_object.read_groups = ["ExternalGroup"]
+        expect(media_object.access_control).to be_changed
+        media_object.save
+        expect(media_object.reload.read_groups).to eq ["ExternalGroup"]
+        expect(solr_doc["read_access_group_ssim"]).to eq ["ExternalGroup"]
+      end
+    end
+
+    context 'when updating a MediaObject' do
+      let(:media_object) { FactoryBot.create(:media_object) }
+
+      it 'saves and indexes' do
+        expect(media_object.read_groups).to be_empty
+        media_object.read_groups = ["ExternalGroup"]
+        expect(media_object.access_control).to be_changed
+        media_object.save
+        expect(media_object.reload.read_groups).to eq ["ExternalGroup"]
+        expect(solr_doc["read_access_group_ssim"]).to eq ["ExternalGroup"]
+      end
+    end
+  end
 end

@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -22,7 +22,7 @@ class Derivative < ActiveFedora::Base
 
   belongs_to :master_file, class_name: 'MasterFile', predicate: ActiveFedora::RDF::Fcrepo::RelsExt.isDerivationOf
 
-  property :location_url, predicate: ::RDF::Vocab::EBUCore.locator, multiple: false do |index|
+  property :location_url, predicate: Avalon::RDFVocab::EBUCore.locator, multiple: false do |index|
     index.as :stored_sortable
   end
   property :hls_url, predicate: Avalon::RDFVocab::Derivative.hlsURL, multiple: false do |index|
@@ -31,12 +31,12 @@ class Derivative < ActiveFedora::Base
   property :duration, predicate: ::RDF::Vocab::EBUCore.duration, multiple: false do |index|
     index.as :stored_sortable
   end
-  property :track_id, predicate: ::RDF::Vocab::EBUCore.identifier, multiple: false
+  property :track_id, predicate: Avalon::RDFVocab::EBUCore.identifier, multiple: false
   property :hls_track_id, predicate: Avalon::RDFVocab::Derivative.hlsTrackID, multiple: false
   property :managed, predicate: Avalon::RDFVocab::Derivative.isManaged, multiple: false do |index|
     index.as ActiveFedora::Indexing::Descriptor.new(:boolean, :stored, :indexed)
   end
-  property :derivativeFile, predicate: ::RDF::Vocab::EBUCore.filename, multiple: false do |index|
+  property :derivativeFile, predicate: Avalon::RDFVocab::EBUCore.filename, multiple: false do |index|
     index.as :stored_sortable
   end
 
@@ -72,7 +72,7 @@ class Derivative < ActiveFedora::Base
 
   def set_streaming_locations!
     if managed
-      path = URI.parse(absolute_location).path
+      path = Addressable::URI.parse(absolute_location).path
       self.location_url = Avalon::StreamMapper.stream_path(path)
       self.hls_url = Avalon::StreamMapper.map(path, 'http', format)
     end

@@ -1,5 +1,5 @@
 <%#
-Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+Copyright 2011-2023, The Trustees of Indiana University and Northwestern
   University.  Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
 
@@ -13,17 +13,12 @@ Unless required by applicable law or agreed to in writing, software distributed
   specific language governing permissions and limitations under the License.
 ---  END LICENSE_HEADER BLOCK  ---
 %>
-<div id="header-navbar" class="navbar navbar-default navbar-static-top" role="navigation">
-  <div class="container">
+<div id="header-navbar" class="navbar navbar-expand-md navbar-light bg-primary mb-3" role="navigation">
+  <div class="container-md">
     <div class="navbar-header">
       <div class="row">
         <div class="col">
-          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#user-util-collapse">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
+          <%= link_to application_name, main_app.root_path, class: "navbar-brand navbar-logo desktop-hidden" %>
         </div>
         <div class="col">
         

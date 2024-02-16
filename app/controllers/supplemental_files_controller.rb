@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -34,7 +34,7 @@ class SupplementalFilesController < ApplicationController
     # FIXME: move filedata to permanent location
     raise Avalon::BadRequest, "Missing required parameters" unless supplemental_file_params[:file]
 
-    @supplemental_file = SupplementalFile.new(label: supplemental_file_params[:label])
+    @supplemental_file = SupplementalFile.new(label: supplemental_file_params[:label], tags: supplemental_file_params[:tags])
     begin
       @supplemental_file.attach_file(supplemental_file_params[:file])
     rescue StandardError, LoadError => e
@@ -115,7 +115,7 @@ class SupplementalFilesController < ApplicationController
 
     def supplemental_file_params
       # TODO: Add parameters for minio and s3
-      params.fetch(:supplemental_file, {}).permit(:label, :file)
+      params.fetch(:supplemental_file, {}).permit(:label, :file, tags: [])
     end
 
     def handle_error(message:, status:)
@@ -145,6 +145,7 @@ class SupplementalFilesController < ApplicationController
     end
 
     def authorize_object
-      authorize! action_name.to_sym, @object, message: "You do not have sufficient privileges to #{action_name} this supplemental file"
+      action = action_name.to_sym == :show ? :show : :edit
+      authorize! action, @object, message: "You do not have sufficient privileges to #{action_name} this supplemental file"
     end
 end

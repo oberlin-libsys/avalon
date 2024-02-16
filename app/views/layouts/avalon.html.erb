@@ -1,5 +1,5 @@
 <%#
-Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+Copyright 2011-2023, The Trustees of Indiana University and Northwestern
   University.  Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
 
@@ -21,6 +21,11 @@ Unless required by applicable law or agreed to in writing, software distributed
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <title><%= render_page_title %></title>
 
+  <meta property="og:title" content="<%= render_page_title %>" />
+  <meta property="og:type" content=<%= @page_type || "website" %> />
+  <meta property="og:url" content=<%= request.url %> />
+  <meta property="og:image" content=<%= @poster_url || request.base_url + image_path("AvalonMediaSystem_Logo_Large.png") %> />
+
   <%= csrf_meta_tags %>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <%= favicon_link_tag %>
@@ -32,11 +37,11 @@ Unless required by applicable law or agreed to in writing, software distributed
   <%= render "modules/google_analytics" %>
 </head>
 
-<body data-mountpoint="<%=main_app.root_path%>">
+<body data-mountpoint="<%=main_app.root_path%>" <%= request.fullpath.include?('login_popup') ? 'onunload=closePopup()' : nil %> >
   <div class="page-container">
     <div class="content-wrapper">
       <a id="skip-to-content" class="sr-only sr-only-focusable" href="#content">Skip to main content</a>
-      <%= render partial: 'shared/ajax_modal' %>
+      <%= render partial: 'shared/modal' %>
       <% if defined?(Samvera::Persona) %>
       <%= render partial: 'modules/become_message' %>
       <% end %>
@@ -52,7 +57,7 @@ Unless required by applicable law or agreed to in writing, software distributed
 
         <!-- All other pages -->
         <% unless current_page?(main_app.root_path) %>
-        <div class="container">
+        <div class="container-md">
           <%= render 'modules/flash_messages' %>
           <%= yield %>
         </div>
@@ -62,6 +67,16 @@ Unless required by applicable law or agreed to in writing, software distributed
     </div>
     <%= render 'modules/footer' %>
   </div>
+
+  <% if request.fullpath.include?('login_popup') %>
+    <% content_for :page_scripts do %>
+      <script>
+        function closePopup() {
+          window.close();
+        }
+      </script>
+    <% end %>
+  <% end %>
 
   <!-- With this many Javascript files performance will be much better
          if they are included here. That means the important content will

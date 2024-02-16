@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -19,7 +19,7 @@ describe WaveformJob do
   let(:master_file) { FactoryBot.create(:master_file_with_media_object_and_derivative) }
   let(:waveform_json) { File.read('spec/fixtures/waveform.json') }
   let(:service) { instance_double("WaveformService") }
-  let(:derivative_path) { URI.parse(master_file.derivatives.first.absolute_location).path }
+  let(:derivative_path) { Addressable::URI.parse(master_file.derivatives.first.absolute_location).path }
 
   describe "perform" do
     before do
@@ -107,7 +107,7 @@ describe WaveformJob do
     end
 
     context 'when MasterFile and Derivative are not retrievable' do
-      let(:secure_hls_url) { "https://path/to/mp4:video.mp4/playlist.m3u8?token=abc" }
+      let(:secure_hls_url) { Addressable::URI.parse("https://path/to/mp4:video.mp4/playlist.m3u8?token=abc") }
 
       before do
         allow(File).to receive(:exist?).and_call_original

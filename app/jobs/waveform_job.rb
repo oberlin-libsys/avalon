@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -25,7 +25,7 @@ class WaveformJob < ActiveJob::Base
 
     service = WaveformService.new(8, SAMPLES_PER_FRAME)
     uri = derivative_file_uri(master_file) || file_uri(master_file) || playlist_url(master_file)
-    json = service.get_waveform_json(uri)
+    json = service.get_waveform_json(Addressable::URI.parse(uri))
     raise "No waveform generated for #{master_file.id}" if json.blank?
 
     master_file.waveform.content = Zlib::Deflate.deflate(json)

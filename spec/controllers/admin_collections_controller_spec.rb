@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -185,6 +185,16 @@ describe Admin::CollectionsController, type: :controller do
       get 'index', params: { user: 'foobar', format:'json' }
       expect(json.count).to eq(0)
     end
+
+    context 'information is missing from the controlled vocabulary file' do
+      it 'should redirect to the homepage' do
+        allow(Avalon::ControlledVocabulary).to receive(:vocabulary).and_return({})
+        login_as(:administrator)
+        get 'index'
+        expect(response).to redirect_to(root_path)
+        expect(flash[:error]).to be_present
+      end
+    end
   end
 
   describe 'pagination' do
@@ -264,6 +274,55 @@ describe Admin::CollectionsController, type: :controller do
       #TODO add check that mediaobject is serialized to json properly
     end
 
+    context "with structure" do
+      let!(:mf_1) { FactoryBot.create(:master_file, :with_structure, media_object: collection.media_objects[0]) }
+      let!(:mf_2) { FactoryBot.create(:master_file, :with_structure, media_object: collection.media_objects[1]) }
+      
+      it "should not return structure by default" do
+        get 'items', params: { id: collection.id, format: 'json' }
+        expect(JSON.parse(response.body)[collection.media_objects[0].id]["files"][0]["structure"]).to be_blank
+        expect(JSON.parse(response.body)[collection.media_objects[1].id]["files"][0]["structure"]).to be_blank
+      end
+      it "should return structure if requested" do
+        get 'items', params: { id: collection.id, format: 'json', include_structure: true }
+        expect(JSON.parse(response.body)[collection.media_objects[0].id]["files"][0]["structure"]).to eq mf_1.structuralMetadata.content
+        expect(JSON.parse(response.body)[collection.media_objects[1].id]["files"][0]["structure"]).to eq mf_2.structuralMetadata.content
+      end
+      it "should not return structure if requested" do
+        get 'items', params: { id: collection.id, format: 'json', include_structure: false}
+        expect(JSON.parse(response.body)[collection.media_objects[0].id]["files"][0]["structure"]).not_to eq mf_1.structuralMetadata.content
+        expect(JSON.parse(response.body)[collection.media_objects[1].id]["files"][0]["structure"]).not_to eq mf_2.structuralMetadata.content
+      end
+    end
+
+    context 'user is a collection manager' do
+      let(:manager) { FactoryBot.create(:manager) }
+      before(:each) do
+        ApiToken.create token: 'manager_token', username: manager.username, email: manager.email
+        request.headers['Avalon-Api-Key'] = 'manager_token'
+      end
+      context 'user does not manage this collection' do
+        it "should return a 401 response code" do
+          get 'items', params: { id: collection.id, format: 'json' }
+          expect(response.status).to eq(401)
+        end
+        it 'should not return json for specific collection\'s media_objects' do
+          get 'items', params: { id: collection.id, format: 'json' }
+          expect(response.body).to be_empty
+        end
+      end
+      context 'user manages this collection' do
+        let!(:collection) { FactoryBot.create(:collection, items: 2, managers: [manager.username]) }
+        it "should not return a 401 response code" do
+          get 'items', params: { id: collection.id, format: 'json' }
+          expect(response.status).not_to eq(401)
+        end
+        it "should return json for specific collection's media objects" do
+          get 'items', params: { id: collection.id, format: 'json' }
+          expect(JSON.parse(response.body)).to include(collection.media_objects[0].id,collection.media_objects[1].id)
+        end
+      end
+    end
   end
 
   describe "#create" do
@@ -281,7 +340,7 @@ describe Admin::CollectionsController, type: :controller do
       # allow(mock_email).to receive(:deliver_later)
       # expect(NotificationsMailer).to receive(:new_collection).and_return(mock_email)
       # FIXME: This delivers two instead of one for some reason
-      expect {post 'create', params: { format:'json', admin_collection: {name: collection.name, description: collection.description, unit: collection.unit, managers: collection.managers} }}.to have_enqueued_job(ActionMailer::DeliveryJob).twice
+      expect {post 'create', params: { format:'json', admin_collection: {name: collection.name, description: collection.description, unit: collection.unit, managers: collection.managers} }}.to have_enqueued_job(ActionMailer::MailDeliveryJob).twice
       # post 'create', format:'json', admin_collection: {name: collection.name, description: collection.description, unit: collection.unit, managers: collection.managers}
     end
     it "should create a new collection" do
@@ -317,7 +376,7 @@ describe Admin::CollectionsController, type: :controller do
       # expect(mock_delay).to receive(:update_collection)
       @collection = FactoryBot.create(:collection)
       # put 'update', id: @collection.id, admin_collection: {name: "#{@collection.name}-new", description: @collection.description, unit: @collection.unit}
-      expect {put 'update', params: { id: @collection.id, admin_collection: {name: "#{@collection.name}-new", description: @collection.description, unit: @collection.unit} }}.to have_enqueued_job(ActionMailer::DeliveryJob).once
+      expect {put 'update', params: { id: @collection.id, admin_collection: {name: "#{@collection.name}-new", description: @collection.description, unit: @collection.unit} }}.to have_enqueued_job(ActionMailer::MailDeliveryJob).once
     end
 
     context "update REST API" do
@@ -424,8 +483,65 @@ describe Admin::CollectionsController, type: :controller do
         collection.reload
         expect(collection.default_visibility).to eq("public")
       end
+
+      context "cdl functionality" do
+        context "cdl disabled for application" do
+          before { allow(Settings.controlled_digital_lending).to receive(:enable).and_return(false) }
+          it "enable cdl for collection" do
+            put 'update', params: { id: collection.id, save_access: "Save Access Settings", cdl: "1" }
+            collection.reload
+            expect(collection.cdl_enabled).to be true
+            expect(flash[:error]).not_to be_present
+          end
+        end
+        context "cdl enable for application" do
+          before { allow(Settings.controlled_digital_lending).to receive(:enable).and_return(true) }
+          it "disable cdl for collection" do
+            put 'update', params: { id: collection.id, save_access: "Save Access Settings" }
+            collection.reload
+            expect(collection.cdl_enabled).to be false
+          end
+        end
+      end
     end
 
+    context "changing lending period" do
+      it "sets a custom lending period" do
+        expect { put 'update', params: { id: collection.id, save_access: "Save Access Settings", cdl: 1, add_lending_period_days: 7, add_lending_period_hours: 8 } }.to change { collection.reload.default_lending_period }.to(633600)
+      end
+
+      it "returns error if invalid" do
+        expect { put 'update', params: { id: collection.id, save_access: "Save Access Settings", cdl: 1, add_lending_period_days: -1, add_lending_period_hours: -1 } }.not_to change { collection.reload.default_lending_period }
+        expect(response).to redirect_to(admin_collection_path(collection))
+        expect(flash[:error]).to be_present
+        expect(flash[:error]).to eq("Lending period must be greater than 0.")
+        put 'update', params: { id: collection.id, save_access: "Save Access Settings", cdl: 1, add_lending_period_days: -1, add_lending_period_hours: 1 }
+        expect(response).to redirect_to(admin_collection_path(collection))
+        expect(flash[:error]).to be_present
+        expect(flash[:error]).to eq("Lending period days needs to be a positive integer.")
+        put 'update', params: { id: collection.id, save_access: "Save Access Settings", cdl: 1, add_lending_period_days: 1, add_lending_period_hours: -1 }
+        expect(response).to redirect_to(admin_collection_path(collection))
+        expect(flash[:error]).to be_present
+        expect(flash[:error]).to eq("Lending period hours needs to be a positive integer.")
+        expect { put 'update', params: { id: collection.id, save_access: "Save Access Settings", cdl: 1, add_lending_period_days: 0, add_lending_period_hours: 0 } }.not_to change { collection.reload.default_lending_period }
+        expect(response).to redirect_to(admin_collection_path(collection))
+        expect(flash[:error]).to be_present
+        expect(flash[:error]).to eq("Lending period must be greater than 0.")
+      end
+
+      it "accepts 0 as a valid day or hour value" do
+        expect { put 'update', params: { id: collection.id, save_access: "Save Access Settings", cdl: 1, add_lending_period_days: 0, add_lending_period_hours: 1 } }.to change { collection.reload.default_lending_period }.to(3600)
+        expect(flash[:error]).not_to be_present
+        expect { put 'update', params: { id: collection.id, save_access: "Save Access Settings", cdl: 1, add_lending_period_days: 1, add_lending_period_hours: 0 } }.to change { collection.reload.default_lending_period }.to(86400)
+        expect(flash[:error]).not_to be_present
+      end
+
+      it "returns error if both day and hour are 0" do
+        expect { put 'update', params: { id: collection.id, save_access: "Save Access Settings", cdl: 1, add_lending_period_days: 0, add_lending_period_hours: 0 } }.not_to change { collection.reload.default_lending_period }
+        expect(response).to redirect_to(admin_collection_path(collection))
+        expect(flash[:error]).to be_present
+      end
+    end
   end
 
   describe "#apply_access" do
@@ -492,6 +608,19 @@ describe Admin::CollectionsController, type: :controller do
       end
     end
 
+    context 'with a UTF8 filename' do
+      it 'adds the poster and displays as UTF8' do
+	file = fixture_file_upload('/きた!.png', 'image/png')
+	expect { post :attach_poster, params: { id: collection.id, admin_collection: { poster: file } } }.to change { collection.reload.poster.present? }.from(false).to(true)
+	expect(collection.poster.mime_type).to eq 'image/png'
+	expect(collection.poster.original_name).to eq 'きた!.png'
+	expect(collection.poster.original_name.encoding.name).to eq 'UTF-8'
+	expect(collection.poster.content).not_to be_blank
+	expect(response).to redirect_to(admin_collection_path(collection))
+	expect(flash[:success]).not_to be_empty
+      end
+    end
+
     context 'when saving fails' do
       before do
         allow_any_instance_of(Admin::Collection).to receive(:save).and_return(false)
@@ -542,7 +671,7 @@ describe Admin::CollectionsController, type: :controller do
     it 'returns the poster' do
       get :poster, params: { id: collection.id }
       expect(response).to have_http_status(:ok)
-      expect(response.content_type).to eq "image/png"
+      expect(response.content_type).to eq "image/png; charset=utf-8"
       expect(response.body).not_to be_blank
     end
   end

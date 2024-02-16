@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -79,12 +79,14 @@ describe BulkActionJobs::ApplyCollectionAccessControl do
       co.default_read_groups = ["co_group"]
       co.default_hidden = true
       co.default_visibility = 'public'
+      co.default_lending_period = 129600
       co.save!
 
       mo.read_users = ["mo_user"]
       mo.read_groups = ["mo_group"]
       mo.hidden = false
       mo.visibility = 'restricted'
+      mo.lending_period = 1209600
       mo.save!
     end
 
@@ -95,12 +97,34 @@ describe BulkActionJobs::ApplyCollectionAccessControl do
       expect(mo.visibility).to eq('public')
     end
 
+    context "with cdl enabled" do
+      before { allow(Settings.controlled_digital_lending).to receive(:enable).and_return(true) }
+      before { allow(Settings.controlled_digital_lending).to receive(:collections_enabled).and_return(true) }
+      it "changes item lending period" do
+        BulkActionJobs::ApplyCollectionAccessControl.perform_now co.id, true
+        mo.reload
+        expect(mo.lending_period).to eq(co.default_lending_period)
+      end
+    end
+
+    context "with cdl disabled" do
+      before { allow(Settings.controlled_digital_lending).to receive(:enable).and_return(false) }
+      it "does not change item lending period" do
+        BulkActionJobs::ApplyCollectionAccessControl.perform_now co.id, true
+        mo.reload
+        expect(mo.lending_period).not_to eq(co.default_lending_period)
+      end
+    end
+
     context "overwrite is true" do
       it "replaces existing Special Access" do
         BulkActionJobs::ApplyCollectionAccessControl.perform_now co.id, true
         mo.reload
         expect(mo.read_users).to contain_exactly("co_user")
         expect(mo.read_groups).to contain_exactly("co_group", "public")
+        solr_doc = ActiveFedora::SolrService.query("id:#{mo.id}").first
+        expect(solr_doc["read_access_person_ssim"]).to contain_exactly("co_user")
+        expect(solr_doc["read_access_group_ssim"]).to contain_exactly("co_group", "public")
       end
     end
 
@@ -110,6 +134,9 @@ describe BulkActionJobs::ApplyCollectionAccessControl do
         mo.reload
         expect(mo.read_users).to contain_exactly("mo_user", "co_user")
         expect(mo.read_groups).to contain_exactly("mo_group", "co_group", "public")
+        solr_doc = ActiveFedora::SolrService.query("id:#{mo.id}").first
+        expect(solr_doc["read_access_person_ssim"]).to contain_exactly("mo_user", "co_user")
+        expect(solr_doc["read_access_group_ssim"]).to contain_exactly("mo_group", "co_group", "public")
       end
     end
   end

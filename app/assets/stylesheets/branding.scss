@@ -1,12 +1,12 @@
-/*
- * Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+/* 
+ * Copyright 2011-2023, The Trustees of Indiana University and Northwestern
  *   University.  Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
- *
+ * 
  * You may obtain a copy of the License at
- *
+ * 
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software distributed
  *   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
  *   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -59,20 +59,20 @@ $white: rgb(255, 255, 255);
 $blueGreen: #477076;
 */
 
+// Colors not from the Styleguide
+$greenBG: scale-color($secondary, $saturation: -40%, $lightness: 60%);
+$gray: #999;
+$lightgray: #f2f2f2;
+$red: #d9534f;
+$blue: #2a4d59;
+$lightblue: #31708f;
+
 // Generated palate colors from http://colormind.io/ for Avalon style guide
 // Add new HEX values below to match your organization's flavor of info/success/warning/danger
 $info: #fbb040;
 $success: #429453;
 $warning: #bf841b;
 $danger: #f44336;
-
-// Colors not from the Styleguide
-$greenBG: scale-color($primary, $saturation: -40%, $lightness: 60%);
-$gray: #999;
-$lightgray: #f2f2f2;
-$red: #d9534f;
-$blue: #2a4d59;
-$lightblue: #31708f;
 
 /**
   * Bootstrap variable overrides
@@ -81,7 +81,7 @@ $lightblue: #31708f;
   * https://github.com/twbs/bootstrap-sass/blob/master/assets/stylesheets/bootstrap/_variables.scss */
 
 /* Branding colors */
-$brand-primary: $primaryDark;
+$brand-primary: $primary;
 $brand-success: $success;
 $brand-info: $info;
 $brand-warning: $warning;
@@ -99,12 +99,16 @@ $padding-base-vertical: 4px;
 
 /* Links */
 $link-color: $primary;
+<<<<<<< HEAD
 $link-hover-color: $oclCardinalRed;
+=======
+$link-hover-color: $secondary;
+>>>>>>> upstream/main
 
 /* Alerts */
-$alert-success-bg: $success;
-$alert-success-text: $white;
-$alert-success-border: $success;
+$alert-bg-level: 0;
+$alert-border-level: 1;
+$alert-color-level: -10;
 
 /* General states (success, info, warning, danger) */
 $state-warning-bg: $warning;
@@ -116,8 +120,13 @@ $state-danger-text: $danger;
 
 /* Header */
 $login-text-color: $gray;
+<<<<<<< HEAD
 $login-link-color: $primaryDark;
 $login-link-background-color: $oclCardinalRed; //$orange; 
+=======
+$login-link-color: $primary;
+$login-link-background-color: $orange;
+>>>>>>> upstream/main
 
 /* Sidenav */
 
@@ -125,6 +134,7 @@ $login-link-background-color: $oclCardinalRed; //$orange;
 $navCollapseWidth: 650px;
 
 /* Navbar */
+<<<<<<< HEAD
 $navbar-default-bg: $primaryDark;
 $navbar-default-color: $white;
 $navbar-default-toggle-hover-bg: $oclCardinalRed;
@@ -139,6 +149,16 @@ $navbar-default-toggle-border-color: $white;
 
 // Panels
 $panel-primary-text: red;
+=======
+$navbar-light-color: $white;
+$navbar-light-toggle-hover-bg: $yellow;
+$navbar-light-link-color: $white;
+$navbar-light-link-hover-color: $primary;
+$navbar-light-link-active-color: $primary;
+$navbar-border-radius: 0;
+$navbar-light-toggle-icon-bar-bg: $white;
+$navbar-light-toggle-border-color: $white;
+>>>>>>> upstream/main
 
 // Inverted navbar toggle
 $navbar-inverse-toggle-hover-bg: #e6e6e6;
@@ -149,6 +169,7 @@ $navbar-inverse-toggle-border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1)
 $grid-gutter-width: 16px;
 
 /* Buttons */
+<<<<<<< HEAD
 $btn-border-radius-base: 2px;
 $btn-default-color: $dark;
 $btn-default-bg: $white;
@@ -163,21 +184,29 @@ $btn-info-color: $white; // $primary;
 $btn-info-bg: $oclCardinalRed; // $info;
 $btn-info-border: $oclCardinalRed; // $info;
 $btn-danger-color: $white;
+=======
+$btn-outline-color: $dark;
+$btn-outline-border-color: $gray;
+$btn-outline-bg-color: $white;
+>>>>>>> upstream/main
 $btn-light-bg: $lightgray;
+$btn-xs-font-size: 0.85rem;
+$btn-xs-height: 1.65rem;
+$btn-xs-padding: 0.15rem 0.5rem;
 
 /* Pagination */
 $pagination-color: $link-color;
 $pagination-bg: $white;
-$pagination-border: $gray;
+$pagination-border-color: $gray;
 $pagination-hover-color: $link-hover-color;
 $pagination-hover-bg: $lightgray;
-$pagination-hover-border: $gray;
+$pagination-hover-border-color: $gray;
 $pagination-active-color: $gray;
 $pagination-active-bg: $lightgray;
-$pagination-active-border: $gray;
+$pagination-active-border-color: $gray;
 $pagination-disabled-color: $gray;
 $pagination-disabled-bg: $white;
-$pagination-disabled-border: $gray;
+$pagination-disabled-border-color: $gray;
 
 $nav-tabs-active-link-hover-color: $dark;
 $input-color: $dark;

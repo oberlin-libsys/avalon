@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -22,7 +22,7 @@ class Admin::CollectionsController < ApplicationController
 
   def load_and_authorize_collections
     authorize!(params[:action].to_sym, Admin::Collection)
-    repository = CatalogController.new.repository
+    repository = CatalogController.new.blacklight_config.repository
     # Allow the number of collections to be greater than 100
     blacklight_config.max_per_page = 100_000
     builder = ::CollectionSearchBuilder.new([:add_access_controls_to_solr_params_if_not_admin, :only_wanted_models, :add_paging_to_solr], self).rows(100_000)
@@ -56,6 +56,7 @@ class Admin::CollectionsController < ApplicationController
         @virtual_groups = @collection.default_virtual_read_groups
         @ip_groups = @collection.default_ip_read_groups
         @visibility = @collection.default_visibility
+        @default_lending_period = @collection.default_lending_period
 
         @addable_groups = Admin::Group.non_system_groups.reject { |g| @groups.include? g.name }
         @addable_courses = Course.all.reject { |c| @virtual_groups.include? c.context_id }
@@ -81,7 +82,7 @@ class Admin::CollectionsController < ApplicationController
   # GET /collections/1/items
   def items
     mos = paginate @collection.media_objects
-    render json: mos.to_a.collect{|mo| [mo.id, mo.as_json] }.to_h
+    render json: mos.to_a.collect { |mo| [mo.id, mo.as_json(include_structure: params[:include_structure] == "true")] }.to_h
   end
 
   # POST /collections
@@ -96,10 +97,25 @@ class Admin::CollectionsController < ApplicationController
           subject: "New collection: #{@collection.name}"
         ).deliver_later
       end
-      render json: {id: @collection.id}, status: 200
+      respond_to do |format|
+        format.html do
+          redirect_to @collection, notice: 'Collection was successfully created.'
+        end
+        format.json do
+          render json: {id: @collection.id}, status: 200
+        end
+      end
     else
       logger.warn "Failed to create collection #{@collection.name rescue '<unknown>'}: #{@collection.errors.full_messages}"
-      render json: {errors: ['Failed to create collection:']+@collection.errors.full_messages}, status: 422
+      respond_to do |format|
+        format.html do
+          flash.now[:error] = @collection.errors.full_messages.to_sentence
+          render action: 'new'
+        end
+        format.json do
+          render json: { errors: ['Failed to create collection:']+@collection.errors.full_messages}, status: 422
+        end
+      end
     end
   end
 
@@ -257,6 +273,12 @@ class Admin::CollectionsController < ApplicationController
     end
   end
 
+  rescue_from Avalon::VocabularyNotFound do |exception|
+    support_email = Settings.email.support
+    notice_text = I18n.t('errors.controlled_vocabulary_error') % [exception.message, support_email, support_email]
+    redirect_to root_path, flash: { error: notice_text.html_safe }
+  end
+
   private
 
   def update_access(collection, params)
@@ -298,6 +320,28 @@ class Admin::CollectionsController < ApplicationController
 
     collection.default_visibility = params[:visibility] unless params[:visibility].blank?
     collection.default_hidden = params[:hidden] == "1"
+    collection.cdl_enabled = params[:cdl] == "1"
+    if collection.cdl_enabled?
+      lending_period = build_default_lending_period(collection)
+      if lending_period.positive?
+        collection.default_lending_period = lending_period
+      elsif lending_period.zero? && params["add_lending_period_days"] && params["add_lending_period_hours"]
+        flash[:error] = "Lending period must be greater than 0."
+      end
+    end
+  end
+
+  def build_default_lending_period(collection)
+    lending_period = 0
+    d = params["add_lending_period_days"].to_i
+    h = params["add_lending_period_hours"].to_i
+    d.negative? ? collection.errors.add(:lending_period, "days needs to be a positive integer.") : lending_period += d.days
+    h.negative? ? collection.errors.add(:lending_period, "hours needs to be a positive integer.") : lending_period += h.hours
+
+    flash[:error] = collection.errors.full_messages.join(' ') if collection.errors.present?
+    lending_period.to_i
+  rescue
+    0
   end
 
   def apply_access(collection, params)

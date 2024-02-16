@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -34,7 +34,7 @@ module MasterFileBehavior
   def stream_details
     flash, hls = [], []
 
-    common, poster_path, captions_path, captions_format = nil, nil, nil, nil, nil, nil
+    common, captions_path, captions_format = nil, nil, nil, nil, nil
 
     derivatives.each do |d|
       common = { quality: d.quality,
@@ -55,7 +55,7 @@ module MasterFileBehavior
     flash = sort_streams flash
     hls = sort_streams hls
 
-    poster_path = Rails.application.routes.url_helpers.poster_master_file_path(self) if has_poster?
+    poster_path = Rails.application.routes.url_helpers.poster_master_file_path(self)
     if has_captions?
       captions_path = Rails.application.routes.url_helpers.captions_master_file_path(self)
       captions_format = self.captions.mime_type

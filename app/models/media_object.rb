@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -37,6 +37,7 @@ class MediaObject < ActiveFedora::Base
   before_save :assign_id!, prepend: true
   after_save :update_dependent_permalinks_job, if: Proc.new { |mo| mo.persisted? && mo.published? }
   after_save :remove_bookmarks
+  after_update_index :enqueue_long_indexing
 
   # Call custom validation methods to ensure that required fields are present and
   # that preferred controlled vocabulary standards are used
@@ -111,6 +112,9 @@ class MediaObject < ActiveFedora::Base
   property :comment, predicate: ::RDF::Vocab::EBUCore.comments, multiple: true do |index|
     index.as :stored_searchable
   end
+  property :lending_period, predicate: ::RDF::Vocab::SCHEMA.eligibleDuration, multiple: false do |index|
+    index.as :stored_sortable
+  end
 
   ordered_aggregation :master_files, class_name: 'MasterFile', through: :list_source
   # ordered_aggregation gives you accessors media_obj.master_files and media_obj.ordered_master_files
@@ -145,6 +149,7 @@ class MediaObject < ActiveFedora::Base
       self.visibility = co.default_visibility
       self.read_users = co.default_read_users.to_a
       self.read_groups = co.default_read_groups.to_a + self.read_groups #Make sure to include any groups added by visibility
+      self.lending_period = co.default_lending_period
     end
   end
 
@@ -173,15 +178,15 @@ class MediaObject < ActiveFedora::Base
   end
 
   def set_media_types!
-    mime_types = master_files.reject {|mf| mf.file_location.blank? }.collect { |mf|
-      Rack::Mime.mime_type(File.extname(mf.file_location))
-    }.uniq
+    mime_types = master_file_solr_docs.reject { |mf| mf["file_location_ssi"].blank? }.collect do |mf|
+      Rack::Mime.mime_type(File.extname(mf["file_location_ssi"]))
+    end.uniq
     self.format = mime_types.empty? ? nil : mime_types
   end
 
   def set_resource_types!
-    self.avalon_resource_type = master_files.reject {|mf| mf.file_format.blank? }.collect{ |mf|
-      case mf.file_format
+    self.avalon_resource_type = master_file_solr_docs.reject { |mf| mf["file_format_ssi"].blank? }.collect do |mf|
+      case mf["file_format_ssi"]
       when 'Moving image'
         'moving image'
       when 'Sound'
@@ -189,10 +194,11 @@ class MediaObject < ActiveFedora::Base
       else
         mf.file_format.downcase
       end
-    }.uniq
+    end.uniq
   end
 
   def update_dependent_properties!
+    @master_file_docs = nil
     self.set_duration!
     self.set_media_types!
     self.set_resource_types!
@@ -221,8 +227,26 @@ class MediaObject < ActiveFedora::Base
     all_pds.uniq
   end
 
-  def to_solr
-    super.tap do |solr_doc|
+  # All fields that need to iterate over the master files do in this new method
+  # using a copy of the master file solr doc to avoid having to fetch them all from fedora
+  # this is probably okay since this is just aggregating the values already in the master file solr docs
+
+  def fill_in_solr_fields_that_need_master_files(solr_doc)
+    solr_doc['section_id_ssim'] = ordered_master_file_ids
+    solr_doc["other_identifier_sim"] +=  master_files.collect {|mf| mf.identifier.to_a }.flatten
+    solr_doc["date_digitized_sim"] = master_files.collect {|mf| mf.date_digitized }.compact.map {|t| Time.parse(t).strftime "%F" }
+    solr_doc["section_label_tesim"] = section_labels
+    solr_doc['section_physical_description_ssim'] = section_physical_descriptions
+    solr_doc['all_comments_sim'] = all_comments
+  end
+
+  # Enqueue background job to do a full indexing including more costly fields that read from children
+  def enqueue_long_indexing
+    MediaObjectIndexingJob.perform_later(id)
+  end
+
+  def to_solr(include_child_fields: false)
+    descMetadata.to_solr(super).tap do |solr_doc|
       solr_doc[ActiveFedora.index_field_mapper.solr_name("workflow_published", :facetable, type: :string)] = published? ? 'Published' : 'Unpublished'
       solr_doc[ActiveFedora.index_field_mapper.solr_name("collection", :symbol, type: :string)] = collection.name if collection.present?
       solr_doc[ActiveFedora.index_field_mapper.solr_name("unit", :symbol, type: :string)] = collection.unit if collection.present?
@@ -232,17 +256,17 @@ class MediaObject < ActiveFedora::Base
       solr_doc[Hydra.config.permissions.read.group] += solr_doc['read_access_ip_group_ssim']
       solr_doc["title_ssort"] = self.title
       solr_doc["creator_ssort"] = Array(self.creator).join(', ')
-      solr_doc["date_digitized_sim"] = master_files.collect {|mf| mf.date_digitized }.compact.map {|t| Time.parse(t).strftime "%F" }
       solr_doc["date_ingested_sim"] = self.create_date.strftime "%F" if self.create_date.present?
-      #include identifiers for parts
-      solr_doc["other_identifier_sim"] +=  master_files.collect {|mf| mf.identifier.to_a }.flatten
-      #include labels for parts and their structural metadata
-      solr_doc['section_id_ssim'] = ordered_master_file_ids
-      solr_doc["section_label_tesim"] = section_labels
-      solr_doc['section_physical_description_ssim'] = section_physical_descriptions
       solr_doc['avalon_resource_type_ssim'] = self.avalon_resource_type.map(&:titleize)
       solr_doc['identifier_ssim'] = self.identifier.map(&:downcase)
-      solr_doc['all_comments_sim'] = all_comments
+      if include_child_fields
+        fill_in_solr_fields_that_need_master_files(solr_doc)
+      elsif id.present? # avoid error in test suite
+        # Fill in other identifier so these values aren't stripped from the solr doc while waiting for the background job
+        mf_docs = ActiveFedora::SolrService.query("isPartOf_ssim:#{id}", rows: 1_000_000)
+        solr_doc["other_identifier_sim"] +=  mf_docs.collect { |h| h['identifier_ssim'] }.flatten
+      end
+
       #Add all searchable fields to the all_text_timv field
       all_text_values = []
       all_text_values << solr_doc["title_tesi"]
@@ -279,7 +303,9 @@ class MediaObject < ActiveFedora::Base
       published: published?,
       summary: abstract,
       visibility: visibility,
-      read_groups: read_groups
+      read_groups: read_groups,
+      lending_period: lending_period,
+      lending_status: lending_status,
     }.merge(to_ingest_api_hash(options.fetch(:include_structure, false)))
   end
 
@@ -366,10 +392,42 @@ class MediaObject < ActiveFedora::Base
     "This item is accessible by: #{actors.join(', ')}."
   end
 
+  def lending_status
+    Checkout.active_for_media_object(id).any? ? "checked_out" : "available"
+  end
+
+  def return_time
+    Checkout.active_for_media_object(id).first&.return_time
+  end
+
+  alias_method :'_lending_period', :'lending_period'
+  def lending_period
+    self._lending_period || collection&.default_lending_period
+  end
+
+  def cdl_enabled?
+    collection&.cdl_enabled?
+  end
+
+  def current_checkout(user_id)
+    checkouts = Checkout.active_for_media_object(id)
+    checkouts.select{ |ch| ch.user_id == user_id  }.first
+  end
+
+  # Override to reset memoized fields
+  def reload
+    @master_file_docs = nil
+    super
+  end
+
   private
 
+    def master_file_solr_docs
+      @master_file_docs ||= ActiveFedora::SolrService.query("isPartOf_ssim:#{id}", rows: 1_000_000)
+    end
+
     def calculate_duration
-      self.master_files.map{|mf| mf.duration.to_i }.compact.sum
+      master_file_solr_docs.collect { |h| h['duration_ssi'].to_i }.compact.sum
     end
 
     def collect_ips_for_index ip_strings
@@ -379,5 +437,4 @@ class MediaObject < ActiveFedora::Base
       end
       ips.flatten.compact.uniq || []
     end
-
 end

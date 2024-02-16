@@ -1,11 +1,11 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2023, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-#
+# 
 # You may obtain a copy of the License at
-#
+# 
 # http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -62,6 +62,15 @@ describe Derivative do
     let(:location)   { "file://#{root}/c5e0f8b8-3f69-40de-9524-604f03b5f867/8c871d4b-a9a6-4841-8e2a-dd98cf2ee625/content.mp4" }
     let(:audio_derivative) { Derivative.new(audio_codec: 'AAC').tap { |d| d.absolute_location = location } }
     let(:video_derivative) { Derivative.new(video_codec: 'AVC').tap { |d| d.absolute_location = location } }
+
+    around :each do |example|
+      old_value = Avalon::StreamMapper.streaming_server
+      begin
+        example.run
+      ensure
+        Avalon::StreamMapper.streaming_server = old_value
+      end
+    end
 
     describe "generic" do
       before :each do
