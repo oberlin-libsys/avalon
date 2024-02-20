@@ -9,7 +9,7 @@ RUN        apt-get update && apt-get upgrade -y build-essential && apt-get autor
             zip \
             git \
 
-            libyaz-dev
+            libyaz-dev \
             ffmpeg \
             libsqlite3-dev \
          && rm -rf /var/lib/apt/lists/* \
