@@ -48,7 +48,7 @@ RUN      apt-get -y update && apt-get install -y ffmpeg
 
 
 # Base stage for building final images
-FROM        ruby:3.2-slim-bullseye as base
+FROM        ruby:3.3-slim-bullseye as base
 LABEL       stage=build
 LABEL       project=avalon
 RUN         echo "deb     http://ftp.us.debian.org/debian/    bullseye main contrib non-free"  >  /etc/apt/sources.list.d/bullseye.list \
