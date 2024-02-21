@@ -111,7 +111,7 @@ LABEL       stage=build
 LABEL       project=avalon
 RUN         bundle config set --local without 'development test' \
          && bundle config set --local with 'aws production postgres' \
-         && bundle install --without development test --with aws production postgres zoom
+         && bundle install --without development test --with aws production postgres 
 
 
 # Install node modules
