@@ -74,7 +74,9 @@ gem 'omniauth', '~> 1.5'
 gem 'omniauth-identity', '~> 3.0', '>= 3.0.9'
 gem 'omniauth-lti', git: "https://github.com/avalonmediasystem/omniauth-lti.git", tag: 'avalon-r4'
 gem 'omniauth-oktaoauth', '~> 0.1.2'
-gem 'omniauth-saml', '~> 1.10', '>= 1.10.3'
+gem 'omniauth-saml', '~> 1.10', '>= 1.10.3' 
+
+
 
 
 # Media Access & Transcoding
@@ -176,7 +178,7 @@ end
 
 # Install the bundle --with zoom to use the Z39.50 bib retriever
 group :zoom, optional: true do
-  gem 'zoom'
+  gem 'zoom', '~> 0.5.0'
 end
 
 # Install the bundle --with postgres if using postgresql as the database backend
