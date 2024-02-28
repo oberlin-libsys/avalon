@@ -81,20 +81,10 @@ $state-info-border:              darken(adjust-hue($state-info-bg, -10), 7%) !de
   }
 }
 
-<<<<<<< HEAD
 .navbar-default {
   @media screen and (max-width: $screen-xs-max) {
     background: $primaryDark;
 
-=======
-.navbar-nav .active > .nav-link {
-  background-color: $yellow;
-}
-
-.navbar-light {
-  @include media-breakpoint-down(xs) {
-    background: $secondary;
->>>>>>> upstream/main
   }
 }
 
@@ -197,7 +187,6 @@ $state-info-border:              darken(adjust-hue($state-info-bg, -10), 7%) !de
   border-radius: 0px;
   width: 100%;
   text-align: left;
-<<<<<<< HEAD
   background-color: $primaryDark;
 }
 
@@ -209,26 +198,6 @@ $state-info-border:              darken(adjust-hue($state-info-bg, -10), 7%) !de
 .manage-btn:focus {
   background-color: $oclCardinalRed;
   color: $white;
-=======
-  padding: 0.85rem 0.9rem;
-
-  &:hover {
-    background-color: $yellow !important;
-    color: $primary;
-
-
-  }
-}
-
-#manage-dropdown:hover .manage-dropdown-menu {
-  display: block;
-  margin-top: 0;
-}
-
-.manage-btn:focus {
-  background-color: $yellow;
-  color: $secondary;
->>>>>>> upstream/main
 }
 
 .manage-btn:active {

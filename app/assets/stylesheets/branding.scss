@@ -99,11 +99,7 @@ $padding-base-vertical: 4px;
 
 /* Links */
 $link-color: $primary;
-<<<<<<< HEAD
 $link-hover-color: $oclCardinalRed;
-=======
-$link-hover-color: $secondary;
->>>>>>> upstream/main
 
 /* Alerts */
 $alert-bg-level: 0;
@@ -120,13 +116,8 @@ $state-danger-text: $danger;
 
 /* Header */
 $login-text-color: $gray;
-<<<<<<< HEAD
 $login-link-color: $primaryDark;
 $login-link-background-color: $oclCardinalRed; //$orange; 
-=======
-$login-link-color: $primary;
-$login-link-background-color: $orange;
->>>>>>> upstream/main
 
 /* Sidenav */
 
@@ -134,7 +125,6 @@ $login-link-background-color: $orange;
 $navCollapseWidth: 650px;
 
 /* Navbar */
-<<<<<<< HEAD
 $navbar-default-bg: $primaryDark;
 $navbar-default-color: $white;
 $navbar-default-toggle-hover-bg: $oclCardinalRed;
@@ -149,16 +139,6 @@ $navbar-default-toggle-border-color: $white;
 
 // Panels
 $panel-primary-text: red;
-=======
-$navbar-light-color: $white;
-$navbar-light-toggle-hover-bg: $yellow;
-$navbar-light-link-color: $white;
-$navbar-light-link-hover-color: $primary;
-$navbar-light-link-active-color: $primary;
-$navbar-border-radius: 0;
-$navbar-light-toggle-icon-bar-bg: $white;
-$navbar-light-toggle-border-color: $white;
->>>>>>> upstream/main
 
 // Inverted navbar toggle
 $navbar-inverse-toggle-hover-bg: #e6e6e6;
@@ -169,7 +149,6 @@ $navbar-inverse-toggle-border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1)
 $grid-gutter-width: 16px;
 
 /* Buttons */
-<<<<<<< HEAD
 $btn-border-radius-base: 2px;
 $btn-default-color: $dark;
 $btn-default-bg: $white;
@@ -184,11 +163,6 @@ $btn-info-color: $white; // $primary;
 $btn-info-bg: $oclCardinalRed; // $info;
 $btn-info-border: $oclCardinalRed; // $info;
 $btn-danger-color: $white;
-=======
-$btn-outline-color: $dark;
-$btn-outline-border-color: $gray;
-$btn-outline-bg-color: $white;
->>>>>>> upstream/main
 $btn-light-bg: $lightgray;
 $btn-xs-font-size: 0.85rem;
 $btn-xs-height: 1.65rem;
