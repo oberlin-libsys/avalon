@@ -38,18 +38,23 @@ $state-info-border:              darken(adjust-hue($state-info-bg, -10), 7%) !de
     margin-top: 0;
   }
 
-  .navbar-toggler {
-    @include media-breakpoint-down(sm) {
-      background: $primary;
-      margin: 0.5rem 1rem 0.5rem 0.5rem;
+  .navbar-toggle {
+    @media screen and (max-width: $screen-xs-max) {
+      background: $white; //$primaryDark;
     }
   }
 
   padding: 0;
 }
 
+// Added following to create title in header
+.navbar-title {
+	font-family: $sansFontFamily;
+	font-size: 20px;
+	}
+
 .navbar {
-  font-family: $museoSlab;
+  font-family: $sansFontFamily; //$museoSlab;
   font-size: 16px;
 
   ul {
@@ -76,13 +81,10 @@ $state-info-border:              darken(adjust-hue($state-info-bg, -10), 7%) !de
   }
 }
 
-.navbar-nav .active > .nav-link {
-  background-color: $yellow;
-}
+.navbar-default {
+  @media screen and (max-width: $screen-xs-max) {
+    background: $primaryDark;
 
-.navbar-light {
-  @include media-breakpoint-down(xs) {
-    background: $secondary;
   }
 }
 
@@ -185,25 +187,23 @@ $state-info-border:              darken(adjust-hue($state-info-bg, -10), 7%) !de
   border-radius: 0px;
   width: 100%;
   text-align: left;
-  padding: 0.85rem 0.9rem;
-
-  &:hover {
-    background-color: $yellow !important;
-    color: $primary;
-
-
-  }
+  background-color: $primaryDark;
 }
 
-#manage-dropdown:hover .manage-dropdown-menu {
-  display: block;
-  margin-top: 0;
+.manage-btn:hover {
+  background-color: $oclCardinalRed!important;
+  color: $white;
 }
 
 .manage-btn:focus {
-  background-color: $yellow;
-  color: $secondary;
+  background-color: $oclCardinalRed;
+  color: $white;
 }
+
+.manage-btn:active {
+  background-color: #810A1C;
+  color: $white;
+  }
 
 .manage-dropdown-menu {
   display: none;

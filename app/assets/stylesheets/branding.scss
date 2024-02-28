@@ -30,15 +30,34 @@ $sansFontFamily: Arial, Helvetica, sans-serif;
 $museoSlab: 'MuseoSlab';
 
 // Primary colors
-$primary: #2a5459;
-$secondary: #80a590;
+$primary: #4d4d4d; 
+$primaryDark: #383838;
 $dark: #0a2326;
+
+/* Original Avalon code
+//  Primary colors
+$primary: #80a590;
+$primaryDark: #2a5459;
+$dark: #0a2326;
+*/
+
 
 // Secondary colors
 $yellow: #ffcf08;
 $orange: #fbb040;
 $white: rgb(255, 255, 255);
 $blueGreen: #477076;
+$oclDarkText: #242424;
+$oclCardinalRed: #CF102D;
+$oclDarkRed: #A80D25;
+
+/* Original Avalon code
+// Secondary colors
+$yellow: #ffcf08;
+$orange: #fbb040;
+$white: rgb(255, 255, 255);
+$blueGreen: #477076;
+*/
 
 // Colors not from the Styleguide
 $greenBG: scale-color($secondary, $saturation: -40%, $lightness: 60%);
@@ -80,7 +99,7 @@ $padding-base-vertical: 4px;
 
 /* Links */
 $link-color: $primary;
-$link-hover-color: $secondary;
+$link-hover-color: $oclCardinalRed;
 
 /* Alerts */
 $alert-bg-level: 0;
@@ -97,8 +116,8 @@ $state-danger-text: $danger;
 
 /* Header */
 $login-text-color: $gray;
-$login-link-color: $primary;
-$login-link-background-color: $orange;
+$login-link-color: $primaryDark;
+$login-link-background-color: $oclCardinalRed; //$orange; 
 
 /* Sidenav */
 
@@ -106,14 +125,20 @@ $login-link-background-color: $orange;
 $navCollapseWidth: 650px;
 
 /* Navbar */
-$navbar-light-color: $white;
-$navbar-light-toggle-hover-bg: $yellow;
-$navbar-light-link-color: $white;
-$navbar-light-link-hover-color: $primary;
-$navbar-light-link-active-color: $primary;
+$navbar-default-bg: $primaryDark;
+$navbar-default-color: $white;
+$navbar-default-toggle-hover-bg: $oclCardinalRed;
+$navbar-default-link-color: $white; //$white;
+$navbar-default-link-hover-color: $white;
+$navbar-default-link-hover-bg: $oclCardinalRed;
+$navbar-default-link-active-color: $white;
+$navbar-default-link-active-bg: $oclCardinalRed;
 $navbar-border-radius: 0;
-$navbar-light-toggle-icon-bar-bg: $white;
-$navbar-light-toggle-border-color: $white;
+$navbar-default-toggle-icon-bar-bg: $oclCardinalRed; // $white;
+$navbar-default-toggle-border-color: $white;
+
+// Panels
+$panel-primary-text: red;
 
 // Inverted navbar toggle
 $navbar-inverse-toggle-hover-bg: #e6e6e6;
@@ -124,9 +149,20 @@ $navbar-inverse-toggle-border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1)
 $grid-gutter-width: 16px;
 
 /* Buttons */
-$btn-outline-color: $dark;
-$btn-outline-border-color: $gray;
-$btn-outline-bg-color: $white;
+$btn-border-radius-base: 2px;
+$btn-default-color: $dark;
+$btn-default-bg: $white;
+$btn-default-border: $gray;
+$btn-primary-color: $white;
+$btn-primary-bg: $oclCardinalRed; // $primaryDark;
+$btn-primary-border: $oclCardinalRed; // $primaryDark;
+$btn-success-color: $white;
+$btn-success-bg: $success;
+$btn-success-border: $success;
+$btn-info-color: $white; // $primary;
+$btn-info-bg: $oclCardinalRed; // $info;
+$btn-info-border: $oclCardinalRed; // $info;
+$btn-danger-color: $white;
 $btn-light-bg: $lightgray;
 $btn-xs-font-size: 0.85rem;
 $btn-xs-height: 1.65rem;

@@ -14,10 +14,16 @@ Unless required by applicable law or agreed to in writing, software distributed
 ---  END LICENSE_HEADER BLOCK  ---
 %>
 <% if current_page?(main_app.root_path) %>
-  <div class="homepage-splash-wrapper">
-    <section class="homepage-splash-top-section">
-      <div class="homepage-splash-search">
-        <%= render :partial=>'modules/avalon_search_form' %>
+<div class="homepage-splash-wrapper">
+  <section class="homepage-splash-top-section">
+    <div class="homepage-splash-search">
+      <%= render :partial=>'modules/avalon_search_form' %>
+    </div>
+
+    <div class="homepage-splash-lead-copy">
+      <div class="container">
+      <h1>ONLINE MEDIA COLLECTIONS</h1>
+       <p class="lead">Search and browse the Libraries' public collections. Oberlin College students, faculty and staff can sign in to view restricted content.</p>
       </div>
 
       <div class="homepage-splash-lead-copy">
