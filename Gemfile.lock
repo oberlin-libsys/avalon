@@ -970,7 +970,6 @@ GEM
     zk (1.10.0)
       zookeeper (~> 1.5.0)
     zookeeper (1.5.5)
-    zoom (0.5.0)
 
 PLATFORMS
   ruby
