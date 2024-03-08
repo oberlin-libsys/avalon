@@ -136,7 +136,7 @@ COPY        --from=node-modules --chown=app:app /node_modules ./node_modules
 
 USER        app
 ENV         RAILS_ENV=production
-
+RUN         bundle install
 RUN         SECRET_KEY_BASE=$(ruby -r 'securerandom' -e 'puts SecureRandom.hex(64)') bundle exec rake assets:precompile
 RUN         cp -n config/controlled_vocabulary.yml.example config/controlled_vocabulary.yml || true
 
