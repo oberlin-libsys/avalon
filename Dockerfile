@@ -2,13 +2,14 @@
 FROM        ruby:3.2-bullseye as bundle
 LABEL       stage=build
 LABEL       project=avalon
-RUN        apt-get update && apt-get upgrade -y build-essential && apt-get autoremove \
+RUN        apt-get update \
+         && apt-get autoremove \
          && apt-get install -y --no-install-recommends --fix-missing \
             cmake \
             pkg-config \
             zip \
             git \
-
+            build-essential \
             libyaz-dev \
             ffmpeg \
             libsqlite3-dev \
