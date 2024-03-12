@@ -1,5 +1,8 @@
 source 'https://rubygems.org'
 
+
+gem 'nokogiri', '~> 1.16', '>= 1.16.2'
+
 # Core rails
 gem 'bootsnap', require: false
 gem 'listen'
