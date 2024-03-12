@@ -2,15 +2,12 @@
 FROM        ruby:3.2-bullseye as bundle
 LABEL       stage=build
 LABEL       project=avalon
-RUN        apt-get update \
-         && apt-get autoremove \
+RUN        apt-get update && apt-get upgrade -y build-essential && apt-get autoremove \
          && apt-get install -y --no-install-recommends --fix-missing \
             cmake \
             pkg-config \
             zip \
             git \
-            build-essential \
-            libyaz-dev \
             ffmpeg \
             libsqlite3-dev \
          && rm -rf /var/lib/apt/lists/* \
@@ -114,7 +111,7 @@ LABEL       stage=build
 LABEL       project=avalon
 RUN         bundle config set --local without 'development test' \
          && bundle config set --local with 'aws production postgres' \
-         && bundle install --without development test --with aws production postgres
+         && bundle install --without development test --with aws production postgres > bundle_install.log 2>&1 || { cat bundle_install.log; false; }
 
 
 # Install node modules
