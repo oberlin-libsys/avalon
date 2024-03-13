@@ -11,6 +11,7 @@ RUN        apt-get update && apt-get upgrade -y build-essential && apt-get autor
             ffmpeg \
             libsqlite3-dev \
             libpq-dev \
+            libc-dev \
          && rm -rf /var/lib/apt/lists/* \
          && apt-get clean
 
