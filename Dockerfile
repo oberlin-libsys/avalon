@@ -10,12 +10,9 @@ RUN        apt-get update && apt-get upgrade -y build-essential && apt-get autor
             git \
             ffmpeg \
             libsqlite3-dev \
-<<<<<<< HEAD
             ruby-all-dev\
-=======
             libpq-dev \
             libc-dev \
->>>>>>> a9cce4cdd7c8d4b4a05930ba483e44b96b3baae4
          && rm -rf /var/lib/apt/lists/* \
          && apt-get clean
 
