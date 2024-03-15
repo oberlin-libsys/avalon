@@ -10,10 +10,6 @@ RUN        apt-get update && apt-get upgrade -y build-essential && apt-get autor
             git \
             ffmpeg \
             libsqlite3-dev \
-            gcc \
-            ruby-dev\
-            libpq-dev \
-            libc-dev \
          && rm -rf /var/lib/apt/lists/* \
          && apt-get clean
 
@@ -33,7 +29,7 @@ LABEL       stage=build
 LABEL       project=avalon
 RUN         bundle config set --local without 'production' \
          && bundle config set --local with 'aws development test postgres' \
-         && bundle install 
+         && bundle install
 
 
 # Download binaries in parallel
@@ -50,7 +46,7 @@ RUN      apt-get -y update && apt-get install -y ffmpeg
 
 
 # Base stage for building final images
-FROM        ruby:3.3-slim-bullseye as base
+FROM        ruby:3.2-slim-bullseye as base
 LABEL       stage=build
 LABEL       project=avalon
 RUN         echo "deb     http://ftp.us.debian.org/debian/    bullseye main contrib non-free"  >  /etc/apt/sources.list.d/bullseye.list \
@@ -109,13 +105,11 @@ RUN         dpkg -i /chrome.deb || apt-get install -yf
 
 # Build production gems
 FROM        bundle as bundle-prod
-
-
 LABEL       stage=build
 LABEL       project=avalon
 RUN         bundle config set --local without 'development test' \
          && bundle config set --local with 'aws production postgres' \
-         && bundle install --without development test --with aws production postgres > bundle_install.log 2>&1 || { cat bundle_install.log; false; }
+         && bundle install
 
 
 # Install node modules
@@ -138,9 +132,9 @@ COPY        --from=node-modules --chown=app:app /node_modules ./node_modules
 
 USER        app
 ENV         RAILS_ENV=production
-RUN         bundle install
+
 RUN         SECRET_KEY_BASE=$(ruby -r 'securerandom' -e 'puts SecureRandom.hex(64)') bundle exec rake assets:precompile
-RUN         cp -n config/controlled_vocabulary.yml.example config/controlled_vocabulary.yml || true
+RUN         cp config/controlled_vocabulary.yml.example config/controlled_vocabulary.yml
 
 
 # Build production image
