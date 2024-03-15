@@ -10,6 +10,7 @@ RUN        apt-get update && apt-get upgrade -y build-essential && apt-get autor
             git \
             ffmpeg \
             libsqlite3-dev \
+            gcc \
             ruby-dev\
             libpq-dev \
             libc-dev \
