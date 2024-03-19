@@ -300,6 +300,8 @@ Rails.application.reloader.to_prepare do
     # up on your models and hooks.
     # config.omniauth :github, 'APP_ID', 'APP_SECRET', scope: 'user,public_repo'
     Avalon::Authentication::Providers.each do |provider|
+      Rails.logger.debug "Processing provider: #{provider.inspect}" # Log the provider being processed
+
       if provider[:provider] == :lti
 	provider[:params].merge!({consumers: Avalon::Lti::Configuration})
       end
