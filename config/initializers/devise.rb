@@ -1,5 +1,3 @@
-require 'devise'
-
 Rails.application.reloader.to_prepare do
   # Use this hook to configure devise mailer, warden hooks and so forth.
   # Many of these configuration options can be set straight in your model.
@@ -300,8 +298,6 @@ Rails.application.reloader.to_prepare do
     # up on your models and hooks.
     # config.omniauth :github, 'APP_ID', 'APP_SECRET', scope: 'user,public_repo'
     Avalon::Authentication::Providers.each do |provider|
-      Rails.logger.debug "Processing provider: #{provider.inspect}" # Log the provider being processed
-
       if provider[:provider] == :lti
 	provider[:params].merge!({consumers: Avalon::Lti::Configuration})
       end
@@ -321,29 +317,30 @@ Rails.application.reloader.to_prepare do
       end
       config.omniauth provider[:provider], *params
     end
-    if provider[:provider] == :identity
-      provider[:params].merge!({
-                                 on_login: AuthFormsController.action(:render_identity_request_form),
-                                 on_registration: AuthFormsController.action(:render_identity_registration_form),
-                                 on_failed_registration: AuthFormsController.action(:render_form_with_errors)
-                               })
-    end
-    params = provider[:params]
 
-    if provider[:provider] == :oktaoauth
-      okta_params = params.delete(:oauth_credentials)
-      params[:strategy_class] = params[:strategy_class].constantize if params.has_key?(:strategy_class)
-      okta_params << params
-      params = okta_params
-    end
+    # ==> Warden configuration
+    # If you want to use other strategies, that are not supported by Devise, or
+    # change the failure app, you can configure them inside the config.warden block.
+    #
+    # config.warden do |manager|
+    #   manager.intercept_401 = false
+    #   manager.default_strategies(scope: :user).unshift :some_external_strategy
+    # end
 
-    params = [params] unless params.is_a?(Array)
-    begin
-      require "omniauth/#{provider[:provider]}"
-    rescue LoadError
-      require "omniauth-#{provider[:provider]}"
-    end
-    config.omniauth provider[:provider], *params
+    # ==> Mountable engine configurations
+    # When using Devise inside an engine, let's call it `MyEngine`, and this engine
+    # is mountable, there are some extra configurations to be taken into account.
+    # The following options are available, assuming the engine is mounted as:
+    #
+    #     mount MyEngine, at: '/my_engine'
+    #
+    # The router that invoked `devise_for`, in the example above, would be:
+    # config.router_name = :my_engine
+    #
+    # When using OmniAuth, Devise cannot automatically set OmniAuth path,
+    # so you need to do it manually. For the users scope, it would be:
+    # config.omniauth_path_prefix = '/my_engine/users/auth'
+    OmniAuth.config.logger = Rails.logger
   end
 
   # Override script_name to always return empty string and avoid looking in @env
