@@ -81,7 +81,7 @@ module Samvera
         "recordsFiltered": presenter_filtered_total,
         "data": @presenter.collect do |presenter|
           edit_button =
-            if presenter.has_attribute?(:provider) && !presenter.provider.nil?
+            if presenter.has_attribute?(:provider) && !presenter."#{provider}".nil?
               view_context.tag.span("Edit", class: 'text-muted', title: 'Edit user is unavailable because this user is single sign on', data: { toggle: 'tooltip' })
             else
               view_context.link_to('Edit', main_app.edit_persona_user_path(presenter))
