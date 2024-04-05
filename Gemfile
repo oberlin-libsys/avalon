@@ -1,8 +1,5 @@
 source 'https://rubygems.org'
 
-
-gem 'nokogiri', '~> 1.16', '>= 1.16.2'
-
 # Core rails
 gem 'bootsnap', require: false
 gem 'listen'
@@ -11,7 +8,7 @@ gem 'psych', '< 4'
 gem 'rails', '=7.0.4.3'
 gem 'sprockets', '~>3.7.2'
 #gem 'sprockets-rails', require: 'sprockets/railtie'
-gem 'sqlite3', '~> 1.7', '>= 1.7.2'
+gem 'sqlite3'
 # Force newer version of mail for compatibility with rails 6.0.6.1
 gem 'mail', '> 2.8.0.1'
 
