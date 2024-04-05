@@ -1,7 +1,2 @@
-<<<<<<< HEAD
 pizza
 history
-=======
-pizza
-history
->>>>>>> latest/main

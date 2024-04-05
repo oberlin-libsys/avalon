@@ -32,10 +32,6 @@
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
 require 'capybara/rspec'
 require 'rspec/retry'
-<<<<<<< HEAD
-require 'devise'
-=======
->>>>>>> latest/main
 
 RSpec.configure do |config|
   # show retry status in spec process
