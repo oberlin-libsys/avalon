@@ -1,0 +1,4 @@
+domain:
+  port: 3000
+supplemental_files:
+  proxy: true

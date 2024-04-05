@@ -1,0 +1,150 @@
+<%#
+Copyright 2011-2024, The Trustees of Indiana University and Northwestern
+  University.  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed
+  under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+  CONDITIONS OF ANY KIND, either express or implied. See the License for the
+  specific language governing permissions and limitations under the License.
+---  END LICENSE_HEADER BLOCK  ---
+%>
+<% @page_title = t('collections.show.title', :collection_name => @collection.name, :application_name => application_name) %>
+
+<div class="page-title-wrapper">
+  <h1 class="page-title">Manage Content</h1>
+</div>
+<div class="modal fade" id="modal" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="modalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title" id="modalLabel">Crop the image</h1>
+      </div>
+      <div class="modal-body">
+        <div class="img-container">
+          <img id="image" src="" style="max-width: 100%;">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-dismiss="modal" id="crop-cancel">Cancel</button>
+        <button type="button" class="btn btn-primary" id="crop">Upload</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="admin-collection-details mb-2">
+  <h2><%= @collection.name %></h2>
+  <div class="row">
+    <div class="col-md-9">
+      <p><strong>Unit:</strong></p>
+      <p><%= @collection.unit %></p>
+      <p><strong>Description:</strong></p>
+      <p class="collection-description"><%= @collection.description %></p>
+      <% if @collection.contact_email.present? %>
+        <p><strong>Contact email:</strong></p>
+        <p><%= mail_to(@collection.contact_email) %></p>
+      <% end %>
+      <% if @collection.website_url.present? %>
+        <p><strong>Website:</strong></p>
+        <p><%= link_to(@collection.website_label.presence || @collection.website_url, @collection.website_url)%></p>
+      <% end %>
+    </div>
+    <div class="col-md-3">
+      <p><strong>Poster:</strong></p>
+      <p id="poster_original_name"><%= @collection.poster.original_name if @collection.poster.present? %></p>
+      <div class="well-vertical-spacer">
+        <% if @collection.poster.present? %>
+        <%= image_tag(poster_admin_collection_path(@collection), class: 'img-fluid', id: 'poster-image') %>
+        <% else %>
+        <img src="" class="img-fluid" id="poster-image">
+        <% end %>
+      </div>
+      <div class="row">
+        <%= form_for @collection, url: attach_poster_admin_collection_path(@collection.id), html: {method: "post"} do |form| %>
+          <%= form.file_field :poster, id: 'poster_input', class: "filedata", style: "height:0px;width:0px;" %>
+          <input type="button" class="btn btn-primary btn-sm mr-2" onclick="$('.filedata').click();" value="<% if @collection.poster.present? %>Change Poster<%else%>Upload Poster<%end%>"
+            <% if cannot?(:edit, @collection) %>disabled<%end%> />
+        <% end %>
+        <%= form_for @collection, url: remove_poster_admin_collection_path(@collection.id), html: {method: "delete"} do |form| %>
+          <input type="submit" class="btn btn-danger btn-sm" value="Remove Poster" <% if @collection.poster.blank? || cannot?(:edit, @collection) %>disabled<%end%> />
+        <% end %>
+      </div>
+      <div class="well-vertical-spacer">
+        <div id='cropper-alert' class="alert" role="alert" style="display: none; padding: 5px; margin-top: 5px"></div>
+        <div id="cropper-progress" class="progress" style="display: none; margin-top: 7px;">
+          <div id="cropper-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated"
+            role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="well-vertical-spacer">
+    <%= link_to('Create An Item', new_media_object_path(collection_id: @collection.id), class: 'btn btn-primary') if can? :create, MediaObject %>
+    <%= link_to('List All Items', search_catalog_path('f[collection_ssim][]' => @collection.name), class: 'btn btn-outline') %>
+    <%= button_tag('Edit Collection Info', class: 'btn btn-outline', data: {toggle:"modal", target:"#new_collection"}) if can? :update, @collection %>
+  </div>
+  <div>
+    <p>Or <a
+        href='https://samvera.atlassian.net/wiki/spaces/AVALON/pages/1957954666/Avalon+Collections+Guide#AvalonCollectionsGuide-UploadingviaBatch'><b>learn
+          how to</b></a> create items using batch upload.</p>
+  </div>
+</div><!-- /well -->
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Assign Staff Roles</h3>
+  </div>
+  <div class="card-body">
+    <div class='staff-roles-section'>
+      <%= render "modules/access_object",
+            access_object: "manager",
+            members: @collection.managers,
+            autocomplete_model: 'user',
+            object: @collection,
+            input_disabled: cannot?( :update_managers, @collection ) %>
+      <%= render "modules/access_object",
+            access_object: "editor",
+            members: @collection.editors,
+            autocomplete_model: 'user',
+            object: @collection,
+            input_disabled: cannot?( :update_editors, @collection ) %>
+      <%= render "modules/access_object",
+            access_object: "depositor",
+            members: @collection.depositors,
+            autocomplete_model: 'user',
+            object: @collection,
+            input_disabled: cannot?( :update_depositors, @collection ) %>
+    </div>
+  </div>
+</div>
+
+<div class="content-block" style="padding-top: 2rem;">
+  <%= render "cdl_form", { object: @collection,
+                           lending_period: @collection.default_lending_period,
+                           cdl: @collection.cdl_enabled } %>
+
+  <h3 style="padding-top: 3rem;">Set Default Access Control for New Items</h3>
+  <%= render "discovery_visibility_form", { object: @collection,
+                                            visibility: @collection.default_visibility,
+                                            hidden: @collection.default_hidden } %>
+
+  <%= render "modules/special_access", { object: @collection,
+                                         modal: { partial: "apply_special_access",
+                                                  title: "Apply current Special Access settings to all existing Items" } } %>
+
+</div>
+
+<%= render "form", modal_title: "Edit Collection Information" %>
+
+<% content_for :page_scripts do %>
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    add_cropper_handler('<%= attach_poster_admin_collection_path(@collection.id) %>');
+  });
+</script>
+<% end %>

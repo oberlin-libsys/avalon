@@ -1,0 +1,37 @@
+<%#
+Copyright 2011-2024, The Trustees of Indiana University and Northwestern
+  University.  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed
+  under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+  CONDITIONS OF ANY KIND, either express or implied. See the License for the
+  specific language governing permissions and limitations under the License.
+---  END LICENSE_HEADER BLOCK  ---
+%>
+
+<%= render "devise/shared/error_messages", resource: resource %>
+
+<div class="omniauth-form container">
+  <h3 align='center'>Change your password</h3>
+
+  <%= bootstrap_form_for(resource, as: resource_name, url: password_path(resource_name), html: { method: :put }, inline_errors: false) do |f| %>
+    <%= f.hidden_field :reset_password_token %>
+
+    <% if @minimum_password_length %>
+      <%= f.password_field :password, label: "New password", help: "#{@minimum_password_length} characters minimum", autocomplete: 'off' %>
+    <% else %>
+      <%= f.password_field :password, label: "New password", autocomplete: 'off' %>
+    <% end %>
+
+    <%= f.password_field :password_confirmation, autocomplete: "off", label: "Confirm new password" %>
+
+    <%= f.submit "Change my password", class: 'btn btn-primary' %>
+  <% end %>
+
+  <%= render "devise/shared/links" %>
+</div>

@@ -1,0 +1,323 @@
+<%#
+Copyright 2011-2024, The Trustees of Indiana University and Northwestern
+  University.  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed
+  under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+  CONDITIONS OF ANY KIND, either express or implied. See the License for the
+  specific language governing permissions and limitations under the License.
+---  END LICENSE_HEADER BLOCK  ---
+%>
+<%= hidden_field_tag :donot_advance, true %>
+<%= hidden_field_tag :step, 'file-upload' %>
+<div id="associated_files">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Section files</h3>
+    </div>
+    <div class="card-body">
+      <% unless @masterFiles.blank? %>
+        <div class="collapse form-tooltip" id="title-tooltip">
+          <button class="close">&times;</button>
+          <p><%= t("file_upload_tip.title").html_safe %></p>
+        </div>
+        <div class="collapse form-tooltip" id="permalink-tooltip">
+          <button class="close">&times;</button>
+          <p><%= t("file_upload_tip.permalink").html_safe %></p>
+        </div>
+        <div class="collapse form-tooltip" id="datedigitized-tooltip">
+          <button class="close">&times;</button>
+          <p><%= t("file_upload_tip.datedigitized").html_safe %></p>
+        </div>
+        <div class="collapse form-tooltip" id="thumbnail-tooltip">
+          <button class="close">&times;</button>
+          <p><%= t("file_upload_tip.thumbnail").html_safe %></p>
+        </div>
+
+        <p class="help-text">Please save your changes before uploading files/making edits to the next section</p>
+        <div class="associated-files-wrapper">
+
+          <% @masterFiles.each do |section| %>
+            <%= hidden_field_tag "master_files[#{section.id}][id]", section.id  %>
+
+            <div class="associated-files-block">
+              <div class="associated-files-top-row row">
+                <!-- Icon -->
+                <div class="col-md-9 col-xs-8">
+                  <span>
+                    <% case section.file_format
+                    when 'Sound' %>
+                    <i class="fa fa-volume-up"></i>
+                    <% when 'Moving image' %>
+                    <i class="fa fa-film"></i>
+                    <% else %>
+                    <i class="fa fa-question-sign"></i>
+                    <% end %>
+                  </span>
+                  <% filename = section.title || File.basename(section.file_location.to_s) %>
+                  <span class="mediaobject-filename" id= <%= "truncated_#{section.id}" %> title="<%= filename %>">
+                    <%= truncate_center(filename, 30, 10) %>
+                  </span>
+                  <span class="mediaobject-filename" id= <%= "full_#{section.id}" %> style="display: none;" title="<%= filename %>">
+                    <%= filename %>
+                  </span>
+                  <span><%= number_to_human_size(section.file_size) %></span>
+                  <% if filename.length > 30 %>
+                    <span>
+                      <button class="btn btn-sm" id=<%= "expand_#{section.id}" %> onclick=<%="expandFilename('#{section.id}')"%>>
+                        (Expand)
+                      </button>
+                    </span>
+                  <% end %>
+                </div>
+                <div class="col-md-3 col-xs-4 d-flex justify-content-end">
+                  <% if can? :edit, @media_object %>
+                    <span>
+                      <%= link_to 'Delete'.html_safe,
+                        master_file_path(section.id),
+                        title: 'Delete',
+                        class: 'btn btn-sm btn-outline btn-confirmation',
+                          data: { placement: 'left' },
+                          method: :delete %>
+                    </span>
+                    <span>
+                      <button class="btn btn-sm btn-outline show_move_modal" data-id="<%= section.id %>"
+                        data-toggle="modal" data-target="#move_modal">
+                        Move
+                      </button>
+                    </span>
+                    <span>
+                      <button id="<%="edit_section_#{section.id}"%>" class="btn btn-sm btn-primary" onclick="return false;" data-toggle="collapse"
+                              data-target="<%="#collapseExample#{section.id}"%>" data-section-id="<%= section.id %>" aria-expanded="false" aria-controls="collapseExample">
+                        Edit
+                      </button>
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+              <div class="collapse" id="<%="collapseExample#{section.id}"%>">
+                <%= form_with model: section, class: "master-file-form" do |form| %>
+                  <div class="row">
+                    <div class="col-sm-4">
+                      <div class="form-group">
+                        <label>
+                          Section Label
+                          <span class="tooltip-label">
+                            <span class='fa fa-question-circle' type="button" data-toggle="collapse" data-target="#section_label_tooltip" aria-expanded="false" aria-controls="section_label_tooltip"></span>
+                          </span>
+                        </label>
+
+                        <span class="form-text tooltip-block collapse" id="section_label_tooltip">
+                          <%= content_tag :span, '', class: 'close fa fa-times' %>
+                          <p class="text-muted">
+                            A label displayed to users. Users will click on these labels to switch between files.
+                          </p>
+                        </span>
+
+                        <%= form.text_field :title %>
+                      </div>
+                    </div>
+                    <div class="col-sm-2">
+                      <div class="form-group">
+                        <label>Date Digitized</label>
+                        <%= form.text_field :date_digitized, class: 'date-input', id: "master_file_date_digitized_#{section.id}" %>
+                      </div>
+                    </div>
+                    <div class="col-sm-2">
+                      <div class="form-group">
+                        <label>Thumbnail</label>
+                        <% if section.is_video? %>
+                        <%= form.text_field :poster_offset, value: section.poster_offset.to_i.to_hms, class: 'input-small' %>
+                        <% else %>
+                        <span class="input-small">n/a</span>
+                        <% end %>
+                      </div>
+                    </div>
+                    <div class="col-sm-4">
+                      <div class="form-group">
+                        <label>Permalink</label>
+                        <%= form.text_field :permalink %>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-sm-12">
+                      <%= form.submit "Save", class: "btn btn-primary btn-sm" %>
+                      <a class="btn btn-outline btn-sm" data-toggle="collapse" data-target="<%="#collapseExample#{section.id}"%>">Cancel</a>
+                      <small class="flash-message visible-inline"></small>
+                    </div>
+                  </div>
+                <% end %>
+                <div class="section-files">
+                   <!-- captions -->
+                   <%= render partial: "supplemental_files_upload", locals: { section: section, label: 'Captions', tag: 'caption' } %>
+                  <!-- transcripts -->
+                  <%= render partial: "supplemental_files_upload", locals: { section: section, label: 'Transcripts', tag: 'transcript' } %>
+                  <!-- supplemental files -->
+                  <%= render partial: "supplemental_files_upload", locals: { section: section, label: 'Section Supplemental Files' } %>
+                </div>
+              </div>
+            </div><!-- end associated-files-block -->
+          <% end %><!-- end masterfiles.each loop -->
+        </div><!-- end associated-files-wrapper -->
+      <hr/>
+      <% end %>
+
+      <div class="row">
+        <div class="col-sm-7">
+          <!-- web-upload -->
+          <p class="muted">Upload through the web (files must not exceed <%= number_to_human_size MasterFile::MAXIMUM_UPLOAD_SIZE %>)</p>
+          <fieldset id='uploader'>
+            <%= form_tag(master_files_path, :enctype=>"multipart/form-data", class: upload_form_classes, data: upload_form_data) do -%>
+            <input type="hidden" name="container_id" value="<%= @media_object.id %>" />
+            <input type="hidden" name="step" value="file_upload" />
+
+            <%= hidden_field_tag("container_content_type", container_content_type, :id => "file_upload_content_type") if defined?(container_content_type) %>
+
+            <%- field_tag_options = defined?(uploader_options) ? uploader_options : {multiple: true} %>
+
+            <span class="fileinput fileinput-exists"
+              style="background-color: white; padding-top: 8px; padding-bottom: 2px; border: none;">
+              <%= check_box_tag(:workflow, 'skip_transcoding', false, id: 'skip_transcoding')%>
+              <%= label_tag(:skip_transcoding) do %>
+                <div style="font-size: inherit;" class="tooltip-help" data-title="Skip Transcoding"
+                  data-tooltip="#skip-transcoding-tooltip">
+                  Skip transcoding
+                </div>
+              <% end %>
+            </span>
+
+            <div class="fileinput fileinput-new" id="file-upload" data-provides="fileinput"  style="height: 33px">
+              <a href="#" class="fileinput-submit fileinput-exists btn btn-outline btn-file file-upload-buttons"
+                data-trigger="submit" data-toggle="modal" data-target="#uploading">Upload</a>
+              <span class="btn btn-outline btn-file file-upload-buttons">
+                <span class="fileinput-new">Select file</span>
+                <span class="fileinput-exists">Change</span>
+                <input type="file" name="Filedata[]">
+              </span>
+              <span class="fileinput-filename"></span>
+              <a href="#" class="close fileinput-exists fileinput-close" data-dismiss="fileinput">&times;</a>
+            </div>
+
+            <%= hidden_field_tag(:new_asset, true, :id => "files_new_asset") if params[:new_asset] %>
+            <%= hidden_field_tag("id",params[:id], :id => "file_upload_id") if params[:id] %>
+            <%= hidden_field_tag(:original, params[:original], :id => "files_original") %>
+            <% end %>
+          </fieldset>
+
+          <div class="collapse form-tooltip equal-height" id="skip-transcoding-tooltip">
+            <button class="close">&times;</button>
+            <p><%= t("file_upload_tip.skip_transcoding").html_safe %></p>
+          </div>
+
+          <div id="uploading" class="modal fade" role="dialog" data-backdrop="true" data-keyboard="false">
+            <div class="modal-dialog modal-sm">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <p><i class='fa fa-spinner fa-spin'></i> Uploading. Please wait...</p>
+                </div>
+                <div class="modal-body"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- dropbox form -->
+        <div class="dropbox-upload col-sm-5">
+          <div class="row">
+            <div class="col-sm-12">
+              <p class="muted">
+                Use the dropbox to import large files.
+                <span class="tooltip-label">
+                  <span class='fa fa-question-circle' type="button" data-toggle="collapse" data-target="#dropbox_tooltip" aria-expanded="false" aria-controls="dropbox_tooltip"></span>
+                </span>
+              </p>
+
+              <span class="form-text tooltip-block collapse" id="dropbox_tooltip">
+                <%= content_tag :span, '', class: 'close fa fa-times' %>
+                <p class="text-muted">
+                  Attach selected files after uploading. Files will begin
+                  processing when you click <strong>"Save and continue"</strong>.
+                </p>
+                <%= render partial: "dropbox_details" %>
+              </span>
+            </div>
+          </div>
+
+          <%= form_tag(master_files_path, id: 'dropbox_form', method: 'post') do %>
+            <%= hidden_field_tag("workflow") %>
+            <input type="hidden" name="container_id" value="<%= @media_object.id %>" />
+            <div class="form-group">
+              <%= button_tag("Open Dropbox", type: 'button', class: 'btn btn-outline', id: "browse-btn",
+              'data-toggle' => 'browse-everything', 'data-route' => browse_everything_engine.root_path,
+              'data-target' => '#dropbox_form', 'data-context' => @media_object.collection.id ) %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="supplemental_files">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Item supplemental files</h3>
+    </div>
+    <div class="card-body">
+      <%= render partial: "supplemental_files_upload", locals: { section: @media_object, index: 0, label: 'Files' } %>
+    </div>
+  </div>
+</div>
+
+<div id="move_modal" class="modal fade" role="dialog" data-backdrop="true">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class='modal-title'>Move Section</h3>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+            aria-hidden="true">×</span></button>
+      </div>
+      <div class="modal-body">
+        <%= form_tag move_master_file_path, id: 'move_form', method: 'POST' do %>
+          <div class="form-group row">
+            <label for="target" class="col-sm-4 col-form-label">Target Item Identifier: </label>
+            <div class="col-sm-8">
+              <%= text_field_tag :target, nil, class: 'form-control', style: 'width: 50%;', type: 'text', onkeyup: 'previewTargetItem(this)' %>
+            </div>
+            <div id="show_target_object" class="ml-3"></div>
+          </div>
+      </div>
+      <div class="modal-footer">
+        <%= submit_tag "Move", class: "btn btn-large btn-primary", disabled: true, id: "move_action_btn" %>
+        <a href="#" data-dismiss="modal" aria-hidden="true" class="btn">Cancel</a>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%= form_for @media_object, html: { id: "empty-form"} do %>
+  <%= render "workflow_buttons" %>
+<% end %>
+
+<% content_for :page_scripts do %>
+  <script>
+    $('.filedata').change(function (e) {
+      e.preventDefault();
+      $(this).closest('form').submit();
+    });
+
+    $('.master-file-form').on("ajax:success", (event, data, status, xhr) => {
+      $(event.currentTarget).find('.flash-message').html("Successfully updated.")
+    }).on("ajax:error", (event, xhr, status, error) => {
+      $(event.currentTarget).find('.flash-message').html("Failed to update.")
+    });
+  </script>
+<% end %>

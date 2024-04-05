@@ -1,0 +1,41 @@
+<%#
+Copyright 2011-2024, The Trustees of Indiana University and Northwestern
+  University.  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed
+  under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+  CONDITIONS OF ANY KIND, either express or implied. See the License for the
+  specific language governing permissions and limitations under the License.
+---  END LICENSE_HEADER BLOCK  ---
+%>
+
+<%= render partial: 'modules/player/section', locals: {section: @master_file, section_info: @stream_info, f_start: @f_start, f_end: @f_end} %>
+
+<% content_for :page_scripts do %>
+
+  <script>
+    window.addEventListener('message', function(event) {
+      var command = event.data.command;
+      let embeddedPlayer = videojs.getPlayer('video-js-embed-<%= @master_file.id %>_html5_api');
+
+      if (command=='play') embeddedPlayer.play();
+      else if (command=='pause') embeddedPlayer.pause();
+      else if (command=='toggle_loop') {
+        embeddedPlayer.loop() ? embeddedPlayer.loop(false): embeddedPlayer.loop(true);
+        embeddedPlayer.autoplay() ? embeddedPlayer.autoplay(false) : embeddedPlayer.autoplay(true);
+      }
+      else if (command=='set_offset') embeddedPlayer.currentTime(event.data.offset); // time is in seconds
+      else if (command=='get_offset') event.source.postMessage({'command':'currentTime','currentTime':embeddedPlayer.currentTime()}, event.origin);
+    });
+  </script>
+
+  <style>
+    a { text-decoration: none; }
+    a:hover { text-decoration: underline }
+  </style>
+<% end %>

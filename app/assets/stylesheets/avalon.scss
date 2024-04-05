@@ -1,0 +1,1292 @@
+/* 
+ * Copyright 2011-2024, The Trustees of Indiana University and Northwestern
+ *   University.  Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed
+ *   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ *   CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ *   specific language governing permissions and limitations under the License.
+ * ---  END LICENSE_HEADER BLOCK  ---
+*/
+
+@import 'branding';
+@import 'avalon/mixins';
+@import 'avalon/accordions';
+@import 'avalon/buttons';
+@import 'avalon/collections';
+@import 'avalon/facets';
+@import 'avalon/footer';
+@import 'avalon/form';
+@import 'avalon/header';
+@import 'avalon/homepage';
+@import 'avalon/modals';
+@import 'avalon/nav';
+@import 'avalon/playlists';
+@import 'avalon/timeliner';
+@import 'avalon/loading-spinner';
+
+body {
+  .page-container {
+    position: relative;
+    min-height: 100vh;
+  }
+}
+
+/* Override Bootstrap CSS */
+
+/*
+  Bootstrap 4 has increased global font-size from 14px to 1rem.
+  This font size of 1rem, gets computed as 16px by browsers, increasing
+  font-size for text elements. Reset this to 14px.
+  See https://getbootstrap.com/docs/4.0/migration/#global-changes.
+*/
+html {
+  font-size: 14px;
+
+  @include media-breakpoint-down(md) {
+    font-size: 12px;
+  }
+}
+
+.alert {
+  margin-bottom: 10px;
+}
+
+main {
+  padding-bottom: 20px;
+}
+
+h1,
+h2 {
+  font-family: $museoSlab;
+}
+
+.btn-info {
+  color: $primary;
+}
+
+tr.active-false td {
+  color: $gray;
+}
+
+// Override Bootstrap CSS from $info for alerts
+.alert-info {
+  background-color: $state-info-bg;
+  color: $state-info-text;
+  border-color: $state-info-border;
+}
+
+pre {
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  padding: 9.5px;
+  border-radius: 4px;
+}
+
+input[type='text']#admin_group {
+  margin-bottom: 0;
+}
+
+div.alert-danger {
+  color: white !important;
+  background-color: $danger !important;
+}
+
+.block {
+  display: block;
+}
+
+.serif-font {
+  font-family: $museoSlab;
+}
+
+.info-text-gray {
+  font-style: italic;
+  color: gray;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.wrap {
+  word-break: break-word;
+}
+
+// Force Bootstrap grid columns to be 100% height of their row
+.row.display-flex {
+  display: flex;
+  flex-wrap: wrap;
+
+  > [class*='col-'] {
+    flex-grow: 1;
+  }
+}
+
+// TODO: We should find and replace these usages
+.danger-color {
+  color: $brand-danger;
+}
+.success-color {
+  color: $brand-success;
+}
+
+// Page title area (because looks like we're sneaking in
+// buttons, and other stuff horizontally positioned alongside title
+.page-title-wrapper {
+  h3 {
+    margin-top: 0;
+  }
+
+  @include media-breakpoint-down(md) {
+    h1 {
+      font-size: 2rem;
+    }
+  }
+}
+
+// Generic content spacer
+.content-block {
+  padding-bottom: 3rem;
+
+  .card {
+    margin-bottom: 1.5rem;
+  }
+}
+
+// Dotted line separator from branding guide
+.separator {
+  border-bottom: 2px dotted $primary;
+  background: white;
+  height: 1px;
+}
+
+/* Headlines / page titles */
+.page-title {
+  font-size: 32px;
+  font-family: $museoSlab;
+}
+.headline {
+  color: $primary;
+  font-size: 29.3px;
+  font-family: $museoSlab;
+}
+.sub-headline {
+  color: $blueGreen;
+  font-family: $museoSlab;
+}
+
+.mobile-hidden {
+  @include media-breakpoint-down(sm) {
+    display: none !important;
+  }
+}
+
+.sm-hidden {
+  @include media-breakpoint-down(sm) {
+    display: none !important;
+  }
+}
+
+.desktop-hidden {
+  @include media-breakpoint-up(md) {
+    display: none !important;
+  }
+}
+
+#user-util-collapse {
+  border-top: 0;
+}
+
+.big-modal {
+  width: 80%;
+  margin-left: -40%;
+}
+
+// Custom file preview field for Jasny bootstrap
+.uneditable-input-exists {
+  //@extend .uneditable-input;
+  width: 45%;
+
+  i {
+    padding-left: 0.5em;
+  }
+}
+
+// Tooltips
+.tooltip-block {
+  cursor: help;
+}
+
+.tooltip-label {
+  font-weight: bold;
+}
+
+.tooltip-label * {
+  cursor: pointer;
+}
+
+.tooltip-block .close {
+  font-size: 14px;
+}
+
+.access-block {
+  .row {
+    margin-right: 0;
+  }
+
+  span.twitter-typeahead {
+    width: 100%;
+  }
+
+  .remove:hover,
+  .remove:active {
+    @extend .btn-danger;
+  }
+
+  td.access_list_label {
+    min-width: 20rem;
+  }
+
+  td.access_list_remove {
+    min-width: 3rem;
+  }
+}
+
+#featured_content_header {
+  margin-top: 0;
+}
+
+#featured_content {
+  h5 {
+    font-weight: bold;
+  }
+
+  img {
+    @extend .img-thumbnail;
+  }
+}
+
+.constraints-container {
+  padding: 0.4em;
+  margin-bottom: 0.8em;
+}
+
+span.constraints-label {
+  margin-left: 0.4em;
+}
+
+#creation_metadata {
+  // Make <pre> formatted text look like normal output instead of
+  // bounded in gray
+  pre {
+    background: $white;
+    font-family: $sansFontFamily;
+    font-size: $font-size-base;
+    padding: 0;
+    background-color: transparent;
+    border: 0;
+
+    /* Force the summary to wrap neatly */
+    word-wrap: normal;
+    word-break: normal;
+    overflow-wrap: normal;
+    white-space: pre-wrap;
+  }
+}
+
+#permalink {
+  margin-top: 2em;
+}
+
+.progress-inline {
+  display: inline-block;
+  height: 9pt;
+  width: 36pt;
+  margin-right: 2pt;
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.control-group .controls {
+  &.error {
+    input:first-child {
+      border-color: $state-danger-text;
+    }
+  }
+
+  .field_with_errors input {
+    border-color: $state-danger-border;
+    background-color: $state-danger-bg;
+  }
+
+  input,
+  textarea {
+    width: 90%;
+    float: none;
+    margin-bottom: 10px;
+    padding: 3px;
+  }
+
+  label {
+    display: block;
+  }
+}
+
+.dl-horizontal dl {
+  margin-bottom: 0px;
+}
+
+.role-popover-help *,
+.popover-help * {
+  cursor: pointer;
+}
+
+.role-popover-help {
+  & + .popover .arrow {
+    left: 10%;
+  }
+}
+
+.btn-confirmation + .popover .popover-content {
+  white-space: nowrap;
+}
+
+.fileinput {
+  max-width: 500px;
+
+  .form-control {
+    max-width: 500px;
+    white-space: nowrap;
+    overflow-x: hidden;
+  }
+}
+
+a[data-trigger='submit'] {
+  text-decoration: none;
+  color: $dark;
+}
+
+.dl-horizontal {
+  dt {
+    width: auto;
+    margin-right: 1em;
+  }
+
+  dd {
+    margin-left: 0;
+  }
+}
+
+#metadata_container {
+  dd {
+    margin-left: 10px;
+  }
+  dt {
+    margin-top: 10px;
+  }
+
+  h4 {
+    font-size: 16px;
+  }
+
+  hr {
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
+  @include media-breakpoint-down(sm) {
+    margin-top: 1rem;
+    padding: 0;
+  }
+
+}
+
+.index_title {
+  line-height: 20px;
+  margin-top: 0;
+  font-weight: 700 !important;
+}
+
+.tab-content > .tab-pane {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  overflow: hidden;
+}
+
+#link-object,
+#ltilink-object,
+#ltilink-section,
+#share-link-section,
+#embed-part {
+  cursor: pointer;
+  width: 100%;
+}
+
+#documents .document {
+  padding-bottom: $padding-base-vertical;
+  margin-left: 1rem;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.remove-dynamic-field:hover {
+  background: $red;
+}
+
+.appliedFilter {
+  .btn {
+    background-color: $greenBG;
+    border-color: $primary;
+    font-size: $font-size-base;
+  }
+
+  .constraint-value:hover {
+    background-color: $greenBG;
+    border-color: $primary;
+  }
+}
+
+@include media-breakpoint-down(xs) {
+  #content {
+    .btn {
+      margin-top: 2px;
+    }
+  }
+}
+
+#resource_description_content {
+  max-width: 700px;
+
+  .col-form-label {
+    font-weight: bold;
+  }
+}
+
+.edit_media_object .form-group {
+  margin-bottom: 0;
+}
+
+
+.ready-to-play {
+  .structure.current-stream:before {
+    @include current-stream-indicator(-12px);
+  }
+
+  .current-section:before {
+    @include current-stream-indicator(-15px);
+  }
+
+  .current-section,
+  .current-stream {
+    font-weight: bold;
+    border-radius: 3px;
+    margin-left: -5px;
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+}
+
+.current-section,
+.current-stream {
+  &:link {
+    @include hidden-disabled-link;
+  }
+
+  &:hover {
+    @include hidden-disabled-link;
+  }
+
+  &:active {
+    @include hidden-disabled-link;
+  }
+
+  &:visited {
+    @include hidden-disabled-link;
+  }
+}
+
+div.status-detail {
+  margin-bottom: 0;
+  font-size: 0.9em;
+}
+
+/* MediaObject structure page */
+.structure_add_to_playlist {
+  float: right;
+  height: 1.5em;
+  background: $blue image-url('add_to_playlist_icon.svg') no-repeat;
+  background-position: 3px 0px;
+  border-color: $blue !important;
+  margin-top: -2px;
+  margin-left: 2px;
+}
+
+#mediaobject_structure {
+  overflow-x: auto;
+
+  @include media-breakpoint-between (md, xl) {
+    ul {
+      width: 100%;
+    }
+  }
+
+  @include media-breakpoint-down (sm) {
+    ul {
+      width: 730px;
+    }
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    // min-width: 920px;
+  }
+
+  ul.header {
+    background-color: $lightgray;
+    font-weight: bold;
+  }
+
+  li.section {
+    &:nth-of-type(2n) {
+      background-color: $lightgray;
+    }
+  }
+
+  .btn-struct {
+    font-size: $btn-xs-font-size;
+    height: $btn-xs-height;
+    padding: $btn-xs-padding;
+    width: max-content;
+  }
+
+  ul.fileinfo,
+  ul.header {
+    border-top: 1px solid $gray;
+
+    li {
+      display: inline-block;
+      padding: 8px;
+      vertical-align: top;
+
+      &:nth-of-type(1) {
+        width: 50px;
+        text-align: center;
+      }
+
+      &:nth-of-type(2),
+      &:nth-of-type(3) {
+        width: 25%;
+      }
+
+      &:nth-of-type(4) {
+        width: 75px;
+        text-align: left;
+      }
+
+      &:nth-of-type(5),
+      &:nth-of-type(6) {
+        width: 75px;
+        text-align: center;
+      }
+
+      &:nth-of-type(7) {
+        width: 50px;
+        text-align: center;
+      }
+    }
+  }
+
+  div.structure_tool {
+    padding: 10px 20px;
+    border-top: 1px dotted $gray;
+    min-height: 40px;
+
+    div.row {
+      margin-top: 5px;
+    }
+
+    div.tool_actions {
+      width: 100%;
+
+      form {
+        display: inline;
+        float: right;
+      }
+    }
+
+    span.tool_label {
+      font-weight: bold;
+    }
+
+    label.file-upload-label {
+      cursor: pointer;
+    }
+  }
+}
+
+div.structure_edit {
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  ul.element_header {
+    .top_actions {
+      margin-top: 1px;
+    }
+
+    .element_name {
+      margin-left: 6px;
+    }
+  }
+
+  .xml_tab_area {
+    .gui_content {
+      background-color: inherit;
+    }
+
+    .xml_problems_panel {
+      background-color: $state-danger-bg;
+    }
+
+    .attribute_container > textarea {
+      resize: both;
+    }
+
+    .attribute_container > a,
+    .attribute_container > label {
+      vertical-align: top;
+    }
+  }
+
+  .xml_textarea {
+    padding: 0;
+  }
+
+  .section_edit_submit {
+    margin-bottom: 10px;
+    margin-top: 4px;
+  }
+
+  .modal-content {
+    overflow: auto;
+  }
+}
+
+.item_note_header {
+  text-transform: uppercase;
+  margin-bottom: 0;
+}
+
+.page_element_outline {
+  outline: solid 1px $link-color !important;
+  outline-offset: 1px !important;
+}
+
+.player_element_outline {
+  outline: solid 1px orange !important;
+  outline-offset: 0;
+}
+
+.tag_filter_container {
+  display: inline-block;
+  float: right;
+  margin-left: 5px;
+}
+
+.tag_filter {
+  display: inline;
+  width: auto;
+}
+
+h5.card-title {
+  font-size: 1.15em;
+  padding-left: 0.4em;
+  min-height: 1em;
+}
+
+.card-header .accordion-toggle:before {
+  font-family: 'FontAwesome';
+  content: '\f078';
+}
+
+.card-header .accordion-toggle.collapsed:before {
+  content: '\f054';
+}
+
+#metadata_header {
+  h3 {
+    font-size: 18px;
+  }
+
+  .tab-content {
+    padding-bottom: 20px;
+  }
+}
+
+.indicator {
+  font-size: 18px;
+  padding-right: 4px;
+}
+
+.now-playing-title {
+  width: 80%;
+  float: left;
+}
+
+#section-label {
+  float: left;
+}
+
+.position-input {
+  width: 4em;
+}
+
+#related_items {
+  .clip_title {
+    font-weight: bold;
+  }
+
+  .clip_start_time {
+  }
+
+  .clip_end_time {
+  }
+
+  .clip_position {
+    text-align: center;
+  }
+
+  tr {
+    height: 2em;
+  }
+}
+
+.scrubber-marker {
+  color: #dedede;
+  font-weight: bold;
+}
+
+.omniauth-form {
+  width: 320px;
+  border: 2px solid #eee;
+  margin: 0px auto;
+  padding: 8px;
+}
+
+.twitter-typeahead {
+  z-index: auto !important;
+  background-color: $white;
+}
+
+/**
+ * Associated Files - Edit - Manage Files
+ */
+#associated_files {
+  margin-bottom: 2rem;
+
+  label {
+    margin-bottom: 1px;
+  }
+
+  .help-text {
+    color: #737373;
+    display: block;
+  }
+
+  .associated-files-block {
+    background: #efefef;
+    margin-bottom: 15px;
+    padding: 10px 15px 0px 15px;
+  }
+
+  .associated-files-top-row {
+    font-size: 18px;
+    padding-bottom: 10px;
+    justify-content: space-between;
+
+    > span {
+      padding: 0 5px;
+    }
+
+    .delete {
+      margin-left: auto;
+      padding: 0;
+    }
+
+    .right {
+      float: right;
+      width: auto;
+    }
+
+    /*
+    Override default d-flex behavior to display
+    media object edit page buttons properly
+    */
+    .d-flex {
+      gap: 5px;
+    }
+  }
+
+  .file-upload {
+    background-color: #efefef;
+  }
+}
+
+#associated_files,
+#supplemental_files {
+  input[type='text'] {
+    @extend .form-control;
+    padding: 3px 6px;
+    height: auto;
+  }
+
+  div.section-files {
+    width: 100%;
+    padding: 5px 0 15px 5px;
+  }
+
+  .section-captions {
+    margin-top: 10px;
+    border-top: 1px dotted;
+  }
+
+  .section_files_tool {
+    padding: 0.75rem;
+    border-top: 1px dotted;
+
+    .filedata {
+      height: 0px;
+      width: 0px;
+      display: none;
+    }
+
+    form {
+      float: right;
+    }
+
+    input[type='button'],
+    input[type='submit'] {
+      @extend .btn-sm;
+    }
+
+    .btn-primary {
+      color: white;
+      background-color: #2a5459;
+      border-color: #2a5459;
+    }
+
+    .btn-danger {
+      color: white;
+      background-color: #f32c1e;
+      border-color: #f32c1e;
+    }
+
+    span.tool_label {
+      font-weight: bold;
+    }
+  }
+
+  div.file_view {
+    margin: 10px 0 5px 20px;
+
+    ul {
+      padding-left: 20px;
+
+      li {
+        display: block;
+        width: 100%;
+      }
+    }
+
+    .caption-form-label {
+      font-style: italic;
+      font-weight: bold;
+    }
+
+    div.supplemental-file-data {
+      height: 1.5rem;
+
+      &.is-editing {
+        .display-item {
+          display: none;
+        }
+        .edit-item {
+          display: flex;
+        }
+        button.edit-item {
+          display: inline-block;
+        }
+        .file-remove {
+          display: none;
+        }
+        display: flex;
+      }
+      margin-top: 0.75rem;
+
+      .visible-inline {
+        display: none;
+
+        .icon-success, .icon-error {
+          font-size: 1.2rem;
+        }
+      }
+
+      .alert {
+        display: inline;
+      }
+    }
+
+    .supplemental-file-form {
+      float: left;
+      width: 100%;
+    }
+
+    .btn-toolbar {
+      display: flex;
+      float: right;
+
+      .btn {
+        margin-left: 0.35rem;
+      }
+    }
+
+    .edit-item {
+      display: none;
+    }
+
+    .form-control {
+      height: 25px;
+    }
+  }
+}
+
+.mediaobject-filename {
+  word-break: break-all;
+}
+
+// Fixes the input displaying over the dropdown datepicker calendar
+.fileinput {
+  position: relative;
+  z-index: 1;
+}
+
+.is-invalid {
+  border-color: $danger;
+}
+
+.is-invalid:focus {
+  outline: 0px !important;
+  -webkit-appearance: none;
+  border-color: $danger;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px $danger;
+}
+
+.is-valid {
+  border-color: $success;
+}
+
+.is-valid:focus {
+  border-color: $success;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px $success;
+}
+
+/**
+ * Collections
+ */
+.well-vertical-spacer {
+  margin-bottom: 10px;
+}
+
+.collection-description {
+  white-space: pre-wrap;
+}
+
+.admin-collection-details {
+  border-radius: 4px;
+  border: 1px solid #e3e3e3;
+  background-color: #f5f5f5;
+  padding: 1.25rem;
+}
+
+// Admin Collection list page
+#admin-collections-table.table-responsive {
+  display: table;
+}
+
+.row.display-flex {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.row.display-flex {
+  .collection-btn {
+    display: flex;
+    justify-content: flex-end;
+    align-content: stretch;
+    margin-bottom: 10px;
+  }
+}
+
+// TODO: Move these to the collections sass file
+.collection-carousel {
+  list-style: none;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+
+  li {
+    width: 240px;
+    flex: 0 0 auto;
+    margin-right: 3rem;
+    opacity: 0.8;
+    transition: 0.5s;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  a {
+    color: white;
+  }
+
+  .collection-carousel-item-title {
+    margin: 1rem 0;
+  }
+}
+
+/*Encode dashboard progress bar */
+#encode-records {
+  .progress {
+    background-color: #bcbebf;
+    text-align: left;
+    position: relative;
+    height: 13px;
+    margin: 4px 0px;
+    .completed {
+      background-color: $success;
+    }
+    .failed {
+      background-color: $danger;
+    }
+    .cancelled {
+      background-color: $gray;
+    }
+    .running {
+      background-color: $lightblue;
+    }
+    .progress-bar {
+      text-align: left;
+      line-height: 13px;
+      padding: 1px 10px 2px;
+    }
+  }
+}
+
+/* File upload step */
+.file-upload-buttons {
+  display: block;
+  padding-top: 5px;
+  min-width: 75px;
+  margin-right: 5px;
+  height: 30px;
+}
+
+.fileinput-filename {
+  width: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-top: 5px;
+}
+
+.form-disabled {
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+.fileinput-close {
+  padding-top: 5px;
+  float: none;
+}
+
+#file-upload {
+  display: flex;
+}
+
+/* DataTables in Playlists, Timelines, Persona Users, and Encode Dashboard */
+.dataTableToolsTop {
+  text-align: right;
+}
+
+@include media-breakpoint-up(xs) {
+  .dataTables_length {
+    float: left;
+  }
+}
+
+// Make table body scrollable in mobile devices
+@include media-breakpoint-down(md) {
+  .dataTableBody {
+    width: 100%;
+    overflow-x: scroll;
+  }
+  .pagination {
+    justify-content: center !important;
+  }
+}
+
+// Action column of each table
+#Playlists,
+#Timelines,
+#users-table {
+  td:last-child {
+    white-space: nowrap;
+  }
+}
+
+#users-table th,
+td {
+  padding-right: 6px !important;
+}
+
+.create-buttons {
+  margin: 20px 0 0 5px;
+  clear: both;
+}
+
+.btn-light {
+  background-color: $btn-light-bg;
+}
+
+.btn-outline {
+  background-color: $btn-outline-bg-color;
+  color: $btn-outline-color;
+  border: 1px solid $btn-outline-border-color;
+  height: fit-content;
+
+  &:hover {
+    background-color: $lightgray;
+  }
+}
+
+.ramp--rails-content {
+  #addToPlaylistBtn {
+    svg {
+      color: $blue;
+      height: 1.3rem;
+      margin-right: 0.2rem;
+    }
+  }
+}
+
+/*
+  Override CSS for transcript component imported
+  from @samvera/ramp
+*/
+.ramp--transcript_nav {
+  padding: 10px 0 0 0;
+}
+
+/* CDL controls on view page styles */
+.cdl-controls {
+  @include media-breakpoint-down(sm) {
+    margin-top: 1rem;
+  }
+  .remaining-time {
+    display: flex;
+    text-align: center;
+
+    @include media-breakpoint-down(sm) {
+      margin: 0;
+    }
+  }
+
+  .remaining-time p {
+    line-height: 1rem;
+    margin: 0.25rem;
+    text-align: left;
+    @include media-breakpoint-between(sm, md) {
+      padding: 0.75rem 0;
+    }
+  }
+
+  .remaining-time span {
+    color: #fff;
+    margin-left: 0.25rem;
+    padding: 0.15rem 0.25rem;
+    border-radius: 0.15rem;
+    background: $primary;
+    font-size: small;
+    line-height: initial;
+
+    @include media-breakpoint-between(sm, md) {
+      padding: 0.75rem 0.25rem;
+    }
+  }
+
+  #return-btn {
+    @include media-breakpoint-down(sm) {
+      float: right;
+    }
+  }
+}
+
+.checkout {
+  background-color: $dark;
+  color: $white;
+
+  p {
+    position: relative;
+    text-align: center;
+    @include media-breakpoint-down(md) {
+      margin-bottom: 0;
+    }
+  }
+
+  form {
+    width: fit-content;
+    margin: 0 auto;
+  }
+
+  .centered {
+    margin: auto;
+    position: absolute;
+    width: 50%;
+    left: 25%;
+  }
+
+  .centered.video {
+    top: 50%;
+    position: absolute;
+    margin: 0;
+    transform: translateY(-50%);
+  }
+}
+
+.checkout.audio {
+  padding: 1rem;
+  height: 25%;
+}
+
+.checkout.video {
+  padding: 3rem;
+  height: 50%;
+  position: relative;
+}
+/* End of CDL controls on view page styles */
