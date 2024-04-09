@@ -1,0 +1,64 @@
+<%#
+Copyright 2011-2024, The Trustees of Indiana University and Northwestern
+  University.  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed
+  under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+  CONDITIONS OF ANY KIND, either express or implied. See the License for the
+  specific language governing permissions and limitations under the License.
+---  END LICENSE_HEADER BLOCK  ---
+%>
+
+<% if Settings&.flash_message&.message %>
+  <% flash[Settings.flash_message.type || :error] = Settings.flash_message.message.html_safe %>
+<% end %>
+
+<% if defined? flash and !flash.empty? %>
+  <div class="container-fluid px-0" id="alerts">
+  <% [:success, :notice, :error, :alert].each do |type| %>
+    <%- alert_class = case type
+      when :success then "alert-success"
+      when :notice  then "alert-info"
+      when :alert   then "alert-warning"
+      when :error   then "alert-danger"
+      else "alert-#{type}"
+      end
+    -%>
+    <% if flash[type] %>
+      <div class="alert <%=alert_class %>">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+          <% Array(flash[type]).each do |msg| %>
+          <p><%= msg %></p>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+  </div>
+<% end %>
+
+<div class="alert alert-danger" style="display: none;" id="cookieless">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <p>Could not complete log in. Possible causes and solutions are:</p>
+  <ul>
+    <li>Cookies are not set, which might happen if you've never visited this website before.<br/>
+        Please open <%= link_to main_app.root_url, main_app.root_url, target: :_blank %> in a new window, then come back and refresh this page.</li>
+    <li>An ad blocker is preventing successful login.<br/>
+        Please disable ad blockers for this site then refresh this page.</li>
+  </ul>
+</div>
+
+<% content_for :page_scripts do %>
+<script>
+  document.cookie = 'test_cookie=true'
+  if(!document.cookie.match(/^(.*;)?\s*test_cookie\s*=\s*[^;]+(.*)?$/)){
+    $('#cookieless').css("display", "block")
+  } else{
+    document.cookie = 'test_cookie=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+  }
+</script>
+<% end %>

@@ -1,0 +1,57 @@
+<%#
+Copyright 2011-2024, The Trustees of Indiana University and Northwestern
+  University.  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed
+  under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+  CONDITIONS OF ANY KIND, either express or implied. See the License for the
+  specific language governing permissions and limitations under the License.
+---  END LICENSE_HEADER BLOCK  ---
+%>
+Batch encoding complete!
+
+<dl>
+  <dt>Manifest:</dt>
+  <dd><%= @batch_registry.file_name %></dd>
+  <dt>Email:</dt>
+  <dd><%= @email %></dd>
+  <dt>Status:</dt>
+  <dd><%= @status %></dd>
+  <dt>Collection:</dt>
+  <dd><%= @collection_text %></dd>
+</dl>
+
+<% if @batch_registry.encoding_error? %>
+  <div class="alert alert-danger">
+    The following rows of your spreadsheet had encoding errors:
+  </div>
+  <table>
+    <tr>
+      <th>Row</th>
+      <th>Media Object ID</th>
+    </tr>
+    <% @batch_registry.batch_entries_with_encoding_error.each do |batch_entry| %>
+      <%= render partial: 'batch_encoding_entry_row', locals: { batch_entry: batch_entry } %>
+    <% end %>
+  </table>
+<% end %>
+
+<% if @batch_registry.batch_entries_with_encoding_success.any? %>
+  <div class="alert">
+    The following rows of your spreadsheet successfully finished encoding:
+  </div>
+  <table>
+    <tr>
+      <th>Row</th>
+      <th>Media Object ID</th>
+    </tr>
+    <% @batch_registry.batch_entries_with_encoding_success.each do |batch_entry| %>
+      <%= render partial: 'batch_encoding_entry_row', locals: { batch_entry: batch_entry } %>
+    <% end %>
+  </table>
+<% end %>
