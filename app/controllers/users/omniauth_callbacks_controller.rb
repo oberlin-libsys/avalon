@@ -33,9 +33,6 @@ class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
       uri = Addressable::URI.parse request['launch_presentation_return_url']
       uri.query = {lti_errormsg: msg}.to_query
       uri.to_s
-    when 'oktaoauth'
-      msg = I18n.t 'devise.omniauth_callbacks.failure', reason: failure_message
-      root_path
     else
       new_user_session_path(scope)
     end

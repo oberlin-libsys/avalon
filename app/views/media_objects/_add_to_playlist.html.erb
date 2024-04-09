@@ -200,11 +200,15 @@ Unless required by applicable law or agreed to in writing, software distributed
       }
 
       function enableAddToPlaylist() {
+        let player = document.getElementById('iiif-media-player');
         let addToPlaylistBtn = document.getElementById('addToPlaylistBtn');
-        if(addToPlaylistBtn && addToPlaylistBtn.disabled) {
+        if(addToPlaylistBtn && addToPlaylistBtn.disabled && player?.player.readyState() === 4) {
           addToPlaylistBtn.disabled = false;
         }
         if(!listenersAdded) {
+          // Add 'Add new playlist' option to dropdown
+          window.add_new_playlist_option();
+
           addListeners();
         }
       }
@@ -228,8 +232,11 @@ Unless required by applicable law or agreed to in writing, software distributed
             currentTime = currentPlayer.player.currentTime();
             duration = currentPlayer.player.duration();
           }
+<<<<<<< HEAD
           // Add 'Add new playlist' option to dropdown
           window.add_new_playlist_option();
+=======
+>>>>>>> latest/main
 
           let canvasIndex = parseInt(currentPlayer.dataset.canvasindex);
           mediaObjectTitle = playlistForm.dataset.title;
