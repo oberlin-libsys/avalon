@@ -1,0 +1,100 @@
+<%#
+Copyright 2011-2024, The Trustees of Indiana University and Northwestern
+  University.  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed
+  under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+  CONDITIONS OF ANY KIND, either express or implied. See the License for the
+  specific language governing permissions and limitations under the License.
+---  END LICENSE_HEADER BLOCK  ---
+%>
+<ul class="navbar-nav nav">
+  <li class="nav-item"><%= link_to 'Browse', main_app.search_catalog_path(search_field: 'all_fields', utf8: '✓', q: ''), class: 'nav-link' %></li>
+  <li class="nav-item <%= active_for_controller('collections') %>"><%= link_to 'Collections', main_app.collections_path, class: 'nav-link' %></li>
+
+  <% if user_session && user_session[:lti_group] %>
+    <li>
+      <%= link_to(vgroup_display(user_session[:lti_group]), main_app.search_catalog_path('f[read_access_virtual_group_ssim][]' => user_session[:lti_group])) %>
+    </li>
+  <% end %>
+  <% if current_ability.can? :create, Playlist %>
+  <li class="nav-item <%= active_for_controller('playlists') %>">
+    <%= link_to 'Playlists', main_app.playlists_path, id:'playlists_nav', class: 'nav-link' %>
+  </li>
+  <% end %>
+  <% if current_ability.can? :create, Timeline %>
+  <li class="nav-item <%= active_for_controller('timelines') %>">
+    <%= link_to 'Timelines', main_app.timelines_path, id:'timelines_nav', class: 'nav-link' %>
+  </li>
+  <% end %>
+  <% if Avalon::Configuration.controlled_digital_lending_enabled? %>
+    <% if current_ability.can? :create, Checkout %>
+    <li class="nav-item <%= active_for_controller('checkouts') %>">
+      <%= link_to main_app.checkouts_path, id:'checkouts_nav', class: 'nav-link' do %>
+        Checkouts
+        (<span data-role='checkout-counter'><%= Checkout.active_for_user(current_or_guest_user.id).count %></span>)
+      <% end %>
+    </li>
+    <% end %>
+  <% end %>
+  <% if render_bookmarks_control? %>
+  <li class="nav-item <%= active_for_controller('bookmarks') %>">
+    <%= link_to main_app.bookmarks_path, id:'bookmarks_nav', class: 'nav-link' do %>
+      <%= t('blacklight.header_links.bookmarks') %>
+      (<span data-role='bookmark-counter'><%= current_or_guest_user.bookmarks.count %></span>)
+    <% end %>
+  </li>
+  <% end %>
+  <% if can?(:read, Admin::Collection) || can?(:manage, Admin::Group) || (defined?(Samvera::Persona) && can?(:manage, User)) %>
+    <li>
+      <div class="btn-group manage-dropdown dropdown" id="manage-dropdown">
+        <button id="manageDropdown" class="btn btn-primary manage-btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Manage
+        </button>
+        <ul class="dropdown-menu manage-dropdown-menu bg-primary" aria-labelledby="manageDropdown">
+          <% if can? :read, Admin::Collection %>
+          <li class="nav-item <%= active_for_controller('admin/collections') %>">
+            <%= link_to 'Manage Content', main_app.admin_collections_path, class: 'nav-link' %></li>
+          <% end %>
+          <% if can? :read, :encode_dashboard %>
+          <li class="nav-item <%= active_for_controller('encode_records') %>">
+            <%= link_to 'Manage Encoding Jobs', main_app.encode_records_path, class: 'nav-link' %></li>
+          <% end %>
+
+          <% if can? :manage, Admin::Group %>
+          <li class="nav-item <%= active_for_controller('admin/groups') %>">
+            <%= link_to 'Manage Groups', main_app.admin_groups_path, class: 'nav-link' %></li>
+          <% end %>
+          <% if defined?(Samvera::Persona) %>
+          <% if can? :manage, User %>
+          <li class="nav-item <%= active_for_controller('samvera/persona/users') %>">
+            <%= link_to 'Manage Users', main_app.persona_users_path, class: 'nav-link' %></li>
+          <% end %>
+          <% if can? :manage, :jobs %>
+          <li class="nav-item">
+            <%= link_to(main_app.jobs_path, target: 'blank', class: 'nav-link') do %>
+              Manage Worker Jobs <span class="fa fa-external-link"></span>
+            <% end %>
+          </li>
+          <% end %>
+          <% end %>
+        </ul>
+      </div>
+    </li>
+  <% end %>
+
+  <li class="nav-item desktop-hidden">
+    <%= link_to_if user_signed_in?, 'Sign out', main_app.destroy_user_session_path, class: 'nav-link' do %>
+      <%# Fallback if the test above fails %>
+      <%= link_to 'Sign in', main_app.new_user_session_path, class: 'nav-link' %>
+    <% end %>
+  </li>
+  <% unless current_page?(main_app.root_path) %>
+    <li class="desktop-hidden"><%= render :partial=>'modules/avalon_search_form' %></li>
+  <% end %>
+</ul>

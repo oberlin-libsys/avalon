@@ -1,0 +1,42 @@
+<%#
+Copyright 2011-2024, The Trustees of Indiana University and Northwestern
+  University.  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed
+  under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+  CONDITIONS OF ANY KIND, either express or implied. See the License for the
+  specific language governing permissions and limitations under the License.
+---  END LICENSE_HEADER BLOCK  ---
+%>
+<% @page_title = t('media_objects.show.title', :media_object_title => @playlist.title, :application_name => application_name) %>
+
+<div class="playlist-view-wrapper row">
+  <div class="page-title-wrapper playlist-title-wrapper row">
+    <div class=" playlist-title col-sm-8 pl-0">
+      <%= icon_only_visibility @playlist.visibility %>
+      <h1 class="page-title"><%= @playlist.title %></h1>
+    </div>
+
+    <div class="playlist-action-button-row col-sm-4">
+      <%= render partial: 'action_buttons' %>
+    </div>
+  </div>
+
+  <div class="col-sm-12 px-0">
+    <%= react_component("PlaylistRamp",
+      {
+        urls: { base_url: request.protocol+request.host_with_port, fullpath_url: request.fullpath },
+        playlist_id: @playlist.id,
+        playlist_item_ids: @playlist.item_ids,
+        token: @playlist_token,
+        share: { canShare: (will_partial_list_render? :share), content: render('share') },
+        comment_tag: { content: render('comments_and_tags') }
+      }
+    ) %>
+  </div>
+</div>
