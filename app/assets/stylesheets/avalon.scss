@@ -71,7 +71,8 @@ h2 {
 }
 
 .btn-info {
-  color: $primary;
+  color: white;
+  background-color: $oclCardinalRed;
 }
 
 tr.active-false td {
@@ -449,8 +450,8 @@ a[data-trigger='submit'] {
 
 .appliedFilter {
   .btn {
-    background-color: $primary;
-    border-color: $primary;
+    background-color: $oclCardinalRed;
+    border-color: $oclCardinalRed;
     font-size: $font-size-base;
   }
 
