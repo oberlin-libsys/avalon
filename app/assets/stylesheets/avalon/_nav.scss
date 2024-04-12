@@ -72,14 +72,16 @@ $screen-xs-max: 576px;
 .navbar-nav .nav-item .nav-link {
   @include media-breakpoint-up(md) {
     padding: 0.85rem 0.9rem;
+    color: white;
   }
   @include media-breakpoint-down(sm) {
     padding-left: 10px;
     padding-right: 10px;
+    color: white;
   }
   &:hover, &:focus {
-    background-color: $yellow;
-    border-color: $yellow;
+    background-color: $oclCardinalRed;
+    border-color: $oclCardinalRed;
   }
 }
 
@@ -219,7 +221,7 @@ $screen-xs-max: 576px;
   }
 
   .dropdown-item:hover {
-    background-color: $yellow;
+    background-color: $oclCardinalRed;
   }
 
   @include media-breakpoint-down(sm) {
