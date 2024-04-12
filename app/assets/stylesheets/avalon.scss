@@ -449,13 +449,13 @@ a[data-trigger='submit'] {
 
 .appliedFilter {
   .btn {
-    background-color: $greenBG;
+    background-color: $primary;
     border-color: $primary;
     font-size: $font-size-base;
   }
 
   .constraint-value:hover {
-    background-color: $greenBG;
+    background-color: $oclDarkRed;
     border-color: $primary;
   }
 }
