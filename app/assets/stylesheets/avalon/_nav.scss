@@ -42,7 +42,7 @@ $screen-xs-max: 576px;
 
   .navbar-toggle {
     @media screen and (max-width: $screen-xs-max) {
-      background: $oclCardinalRed; //$primaryDark;
+      background: green; //$primaryDark;
     }
   }
 
