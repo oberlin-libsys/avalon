@@ -79,7 +79,7 @@ encode_throttling:
 auth:
   registerable: true
 
-  configuration:
+#  configuration:
 #     - :name: Avalon Lti OAuth
 #       :provider: :lti
 #       :hidden: true
