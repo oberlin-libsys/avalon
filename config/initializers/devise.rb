@@ -316,6 +316,19 @@ Rails.application.reloader.to_prepare do
 	require "omniauth-#{provider[:provider]}"
       end
       config.omniauth provider[:provider], *params
+  require 'omniauth-okta'
+  config.omniauth(:okta,
+                  ENV['OKTA_CLIENT_ID'],
+                  ENV['OKTA_CLIENT_SECRET'],
+                  scope: 'openid profile email',
+                  fields: ['profile', 'email'],
+                  client_options: {
+                    site:          'https://your-org.okta.com',
+                    authorize_url: 'https://your-org.okta.com/oauth2/default/v1/authorize',
+                    token_url:     'https://your-org.okta.com/oauth2/default/v1/token',
+                    user_info_url: 'https://your-org.okta.com/oauth2/default/v1/userinfo',
+                  },
+                  strategy_class: OmniAuth::Strategies::Okta)    
     end
 
     # ==> Warden configuration
