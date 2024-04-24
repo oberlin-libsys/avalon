@@ -58,7 +58,6 @@ Rails.application.routes.draw do
       get 'count', constraints: { format: 'json' }
     end
   end
-
   devise_for :users, controllers: { omniauth_callbacks: 'users/omniauth_callbacks', sessions: 'users/sessions' }
   devise_scope :user do
     match '/users/auth/:provider', to: 'users/omniauth_callbacks#passthru', as: :user_omniauth_authorize, via: [:get, :post]
