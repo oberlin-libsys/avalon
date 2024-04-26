@@ -14,20 +14,19 @@
 
 class Users::SessionsController < Devise::SessionsController
   def new
-    if Avalon::Authentication::VisibleProviders.length == 1 && params[:admin].blank?
-      omniauth_params = params.reject { |k,v| ['controller','action'].include?(k) }
-      omniauth_params.permit!
-      login_path = user_omniauth_authorize_path(Avalon::Authentication::VisibleProviders.first[:provider], omniauth_params)
-      redirect_to login_path
-    else
-      super
-    end
+  end
+
+  def create
   end
 
   def destroy
-    StreamToken.logout! session
-    super
-    flash[:success] = flash[:notice]
-    flash[:notice] = nil
+    session[:oktastate] = nil
+    @current_user = session[:oktastate]
+    @session = session[:oktastate]
+    redirect_to root_path
   end
+end
+
+class SessionsController < ApplicationController
+  
 end
