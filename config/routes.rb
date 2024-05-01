@@ -1,10 +1,6 @@
 require 'avalon/routing/can_constraint'
 
 Rails.application.routes.draw do
-
-
-
-
   mount Samvera::Persona::Engine => '/'
   mount Blacklight::Engine => '/catalog'
   concern :searchable, Blacklight::Routes::Searchable.new
@@ -62,16 +58,6 @@ Rails.application.routes.draw do
       get 'count', constraints: { format: 'json' }
     end
   end
-
-
-  get 'sessions/new'
-  get 'sessions/create'
-  get 'sessions/destroy'
-  root 'pages#home'
-  get 'pages/account'
-  devise_for :users, :controllers => { :omniauth_callbacks => "users/omniauth_callbacks" }
-
-  
   devise_for :users, controllers: { omniauth_callbacks: 'users/omniauth_callbacks', sessions: 'users/sessions' }
   devise_scope :user do
     match '/users/auth/:provider', to: 'users/omniauth_callbacks#passthru', as: :user_omniauth_authorize, via: [:get, :post]

@@ -1,7 +1,5 @@
 units:
-  - Oberlin College Libraries
-  - Conservatory Library
-  - Oberlin College Archives
+  - Default Unit
 identifier_types:
   local: Catalog Key
   oclc: OCLC

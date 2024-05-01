@@ -34,19 +34,6 @@ class ApplicationController < ActionController::Base
   before_action :set_no_cache_headers, if: proc{|c| request.xhr? }
   prepend_before_action :remove_zero_width_chars
 
-  protect_from_forgery with: :exception
-
-  def user_is_logged_in?
-    if !session[:oktastate]
-      print("user is not logged in")
-      redirect_to user_oktaoauth_omniauth_authorize_path
-    end
-  end
-
-  def after_sign_in_path_for(resource)
-    request.env['omniauth.origin'] || root_path
-  end
-
   def set_no_cache_headers
     response.headers["Cache-Control"] = "no-cache, no-store"
     response.headers["Pragma"] = "no-cache"

@@ -32,21 +32,14 @@ class User < ActiveRecord::Base
   devise_list = [ :database_authenticatable, :invitable, :omniauthable,
                   :recoverable, :rememberable, :trackable, :validatable ]
   devise_list << :registerable if Settings.auth.registerable
+
   devise_list << { authentication_keys: [:login] }
+  #devise_list << { authentication_keys: [:login] } unless Settings.auth.configuration[0].provider
+  #devise_list <<  { omniauth_providers: [:oktaoauth] } if ENV['OKTA_CLIENT_ID']
+  #devise_list << { authentication_keys: [:login] }
 
   devise(*devise_list)
-  
-  devise :omniauthable, omniauth_providers: [:oktaoauth]
-  def self.from_omniauth(auth)
-    user = User.find_or_create_by(email: auth['info']['email']) do |user|
-      user.provider = auth['provider']
-      user.uid = auth['uid']
-      user.email = auth['info']['email']
-    end
-  end
 
-
-  
   validates :username, presence: true, uniqueness: { case_sensitive: false }
   validates :email, presence: true, uniqueness: { case_sensitive: false }
   validate :username_email_uniqueness

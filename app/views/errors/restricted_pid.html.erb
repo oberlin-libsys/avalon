@@ -19,13 +19,6 @@ Unless required by applicable law or agreed to in writing, software distributed
     <% if current_user.nil? %>
       <p>You're not signed in. You may be able to view this item after signing in.</p>
       <%= link_to 'Sign in', main_app.new_user_session_path, class: "btn btn-info" %>
-      <% if @current_user %>
-      <h1><%=@current_user.email %></h1>
-      <%= link_to "Edit your account", "/pages/account", class: "item" %>
-      <%= link_to "logout", ENV['OKTA_URL'] + "/login/signout?fromURI=http://localhost:3000/sessions/destroy", class: "item" %>
-      <% else %>
-      <%= link_to 'Sign in via Okta', user_oktaoauth_omniauth_authorize_path, method: :post %>
-      <% end %>
     <% else %>
       <p>You are not authorized to access this content.</p>
     <% end %>

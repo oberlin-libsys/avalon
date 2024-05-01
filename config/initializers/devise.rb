@@ -353,4 +353,28 @@ Rails.application.reloader.to_prepare do
       ''
     end
   end
+ways return empty string and avoid looking in @env
+  # This override is needed due to our direct rendering of the identity login form in AuthFormsController
+  # which doesn't initialize @env leading to a NoMethodError when trying read a hash value from it.
+  OmniAuth::Strategies::Identity.class_eval do
+    def script_name
+      ''
+    end
+  end
+ways return empty string and avoid looking in @env
+  # This override is needed due to our direct rendering of the identity login form in AuthFormsController
+  # which doesn't initialize @env leading to a NoMethodError when trying read a hash value from it.
+  OmniAuth::Strategies::Identity.class_eval do
+    def script_name
+      ''
+    end
+  end
+ways return empty string and avoid looking in @env
+  # This override is needed due to our direct rendering of the identity login form in AuthFormsController
+  # which doesn't initialize @env leading to a NoMethodError when trying read a hash value from it.
+  OmniAuth::Strategies::Identity.class_eval do
+    def script_name
+      ''
+    end
+  end
 end
