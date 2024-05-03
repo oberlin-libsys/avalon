@@ -12,7 +12,7 @@
 #   specific language governing permissions and limitations under the License.
 # ---  END LICENSE_HEADER BLOCK  ---
 
-class AddSessionsTable < ActiveRecord::Migration[5.1]
+class AddSessionsTable < ActiveRecord::Migration[5.2]
   def change
     create_table :sessions do |t|
       t.string :session_id, :null => false

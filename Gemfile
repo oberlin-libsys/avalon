@@ -73,6 +73,7 @@ gem 'omniauth-identity', '>= 2.0.0'
 gem 'omniauth-lti', git: "https://github.com/avalonmediasystem/omniauth-lti.git", tag: 'avalon-r4'
 gem 'omniauth-okta'
 gem "omniauth-saml", "~> 2.0"
+gem 'figaro'  #env variables
 
 
 # Media Access & Transcoding
