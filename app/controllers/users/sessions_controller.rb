@@ -25,9 +25,9 @@ class Users::SessionsController < Devise::SessionsController
   end
 
   def destroy
-    StreamToken.logout! session
-    super
-    flash[:success] = flash[:notice]
-    flash[:notice] = nil
+    session[:oktastate] = nil
+    @current_user = session[:oktastate]
+    @session = session[:oktastate]
+    redirect_to root_path
   end
 end

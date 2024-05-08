@@ -29,22 +29,33 @@ class User < ActiveRecord::Base
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable
   # Registration is controlled via settings.yml
-  devise_list = [ :database_authenticatable, :invitable, :omniauthable,
-                  :recoverable, :rememberable, :trackable, :validatable ]
-  devise_list << :registerable if Settings.auth.registerable
+  devise :invitable, :omniauthable,  authentication_keys: [:login],  omniauth_providers: [:oktaoauth] 
+  # devise_list = [ :database_authenticatable, :invitable, :omniauthable,
+ #                 :recoverable, :rememberable, :trackable, :validatable ]
+  #devise_list << :registerable if Settings.auth.registerable
+  #devise_list << { authentication_keys: [:login] }
+  #devise_list << [:omniauthable, omniauth_providers: [:oktaoauth]]
 
-  devise_list << { authentication_keys: [:login] }
+
   #devise_list << { authentication_keys: [:login] } unless Settings.auth.configuration[0].provider
   #devise_list <<  { omniauth_providers: [:oktaoauth] } if ENV['OKTA_CLIENT_ID']
   #devise_list << { authentication_keys: [:login] }
 
-  devise(*devise_list)
+  #devise(*devise_list)
 
   validates :username, presence: true, uniqueness: { case_sensitive: false }
   validates :email, presence: true, uniqueness: { case_sensitive: false }
   validate :username_email_uniqueness
 
   before_destroy :remove_bookmarks
+
+  def self.from_omniauth(auth)
+    user = User.find_or_create_by(email: auth["info"]["email"]) do |user|
+      user.provider = auth['provider']
+      user.uid = auth['uid']
+      user.email = auth['info']['email']
+    end
+  end
 
   def username_email_uniqueness
     errors.add(:email, :taken, value: email) if User.find_by_username(email) && User.find_by_username(email).id != id

@@ -66,12 +66,19 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def after_sign_in_path_for(_resource)
-    if request.env['QUERY_STRING']['login_popup'].present?
-      root_path + "self_closing.html"
-    else
-      request.env['omniauth.origin'] || find_redirect_url(nil)
+  def user_is_loggged_in?
+    if !session[:oktastate]
+      print("this is not logged in")
+      redirect_to_user_oktaauth_omniauth_authorize_path
     end
+  end
+  def after_sign_in_path_for(_resource)
+    request.env['omniauth.origin'] || root_path
+    #if request.env['QUERY_STRING']['login_popup'].present?
+    #  root_path + "self_closing.html"
+    #else
+    #  request.env['omniauth.origin'] || find_redirect_url(nil)
+    #end
   end
 
   # Used here and in omniauth_callbacks_controller

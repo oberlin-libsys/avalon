@@ -1,6 +1,8 @@
 Rails.application.reloader.to_prepare do
   # Use this hook to configure devise mailer, warden hooks and so forth.
   # Many of these configuration options can be set straight in your model.
+  require 'omniauth-okta'
+  #require 'omniauth-oktaauth'
   Devise.setup do |config|
     # The secret key used by Devise. Devise uses this key to generate
     # random tokens. Changing this key will render invalid all existing
@@ -26,6 +28,34 @@ Rails.application.reloader.to_prepare do
     # :mongoid (bson_ext recommended) by default. Other ORMs may be
     # available as additional gems.
     require 'devise/orm/active_record'
+    config.omniauth(:okta,
+                      ENV['OKTA_CLIENT_ID'],
+                      ENV['OKTA_CLIENT_SECRET'],
+                      scope: 'openid profile email',
+                      fields: ['profile', 'email'],
+                      client_options: {
+                        site:          'https://oberlin.okta.com',
+                        authorize_url: 'https://oberlin.okta.com/oauth2/default/v1/authorize',
+                        token_url:     'https://oberlin.okta.com/oauth2/default/v1/token',
+                        user_info_url: 'https://oberlin.okta.com/oauth2/default/v1/userinfo',
+                      },
+                      strategy_class: OmniAuth::Strategies::Okta)
+                        
+ #   config.omniauth(:okta,
+ #                     ENV['OKTA_CLIENT_ID'],
+ #                     ENV['OKTA_CLIENT_SECRET'],
+ #                     :scope => 'openid profile email',
+ #                     :fields => %w[profile email],
+ #                     :client_options => {
+ #                       site: ENV['OKTA_ISSUER'],
+ #                       authorize_url: [ENV['OKTA_ISSUER'], '/authpath/authorize'].join,
+ #                       token_url: [ENV['OKTA_ISSUER'], '/authpath/token'].join,
+ #                       user_info_url: [ENV['OKTA_ISSUER'], '/authpath/userinfo'].join
+ #                     },
+ #                     :redirect_uri => ENV['OKTA_REDIRECT_URI'],
+ #                     :strategy_class => OmniAuth::Strategies::Okta)
+ #   
+
 
     # ==> Configuration for any authentication mechanism
     # Configure which keys are used when authenticating a user. The default is
