@@ -88,4 +88,4 @@ yarn-debug.log*
 .*.swp
 
 .env
-application.yml
+config/application.yml
