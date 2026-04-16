@@ -19,8 +19,13 @@ class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
 
   def oktaoauth
     @user = User.from_omniauth(request.env["omniauth.auth"])
-     session[:oktastate] = request.env["omniauth.auth"]["uid"]
-    redirect_to root_path
+    if @user.persisted?
+      sign_in @user, event: :authentication
+      session[:oktastate] = request.env["omniauth.auth"]["uid"]
+      redirect_to root_path
+    else
+      redirect_to new_user_session_path, alert: "Okta login failed."
+    end
   end
 
   def passthru
@@ -40,9 +45,9 @@ class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
       uri.query = {lti_errormsg: msg}.to_query
       uri.to_s
       
-    /when 'oktaoauth'
+    when 'oktaoauth'
       msg = I18n.t 'devise.omniauth_callbacks.failure', reason: failure_message
-      root_path/
+      root_path
     else
       new_user_session_path(scope)
     end
