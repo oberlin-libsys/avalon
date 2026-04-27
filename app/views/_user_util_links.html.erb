@@ -91,7 +91,7 @@ Unless required by applicable law or agreed to in writing, software distributed
   <li class="nav-item desktop-hidden">
     <%= link_to_if user_signed_in?, 'Sign out', ENV['OKTA_URL'] + "/login/signout?fromURI=http://localhost:3000/sessions/destroy", class: 'nav-link' do %>
       <%# Fallback if the test above fails %>
-      <%= link_to 'Sign in', user_oktaoauth_omniauth_authorize_path, class: 'nav-link' %>
+      <%= button_to "Sign In", user_oktaoauth_omniauth_authorize_path, method: :post, class: 'btn btn-link' %>
     <% end %>
   </li>
   <% unless current_page?(main_app.root_path) %>
