@@ -88,12 +88,13 @@ Unless required by applicable law or agreed to in writing, software distributed
     </li>
   <% end %>
 
-  <li class="nav-item desktop-hidden">
-    <%= link_to_if user_signed_in?, 'Sign out', ENV['OKTA_URL'] + "/login/signout?fromURI=http://localhost:3000/sessions/destroy", class: 'nav-link' do %>
-      <%# Fallback if the test above fails %>
-      <%= button_to "Sign In", user_oktaoauth_omniauth_authorize_path, method: :post, class: 'btn btn-link' %>
-    <% end %>
-  </li>
+<li class="nav-item">
+  <%= form_tag('/users/auth/oktaoauth', method: 'post', data: { turbo: false }) do %>
+    <button type="submit" class="nav-link btn btn-link" style="border: none; background: transparent; cursor: pointer;">
+      Sign In
+    </button>
+  <% end %>
+</li>
   <% unless current_page?(main_app.root_path) %>
     <li class="desktop-hidden"><%= render :partial=>'modules/avalon_search_form' %></li>
   <% end %>
