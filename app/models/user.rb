@@ -49,11 +49,13 @@ class User < ActiveRecord::Base
 
   before_destroy :remove_bookmarks
 
-  def self.from_omniauth(auth)
-    user = User.find_or_create_by(email: auth["info"]["email"]) do |user|
-      user.provider = auth['provider']
-      user.uid = auth['uid']
-      user.email = auth['info']['email']
+ def self.from_omniauth(auth)
+    where(email: auth.info.email).first_or_create do |user|
+      user.provider = auth.provider
+      user.uid      = auth.uid
+      user.email    = auth.info.email
+      user.username = auth.info.email # Satisfies 'presence: true' validation
+      user.password = Devise.friendly_token[0, 20]
     end
   end
 
