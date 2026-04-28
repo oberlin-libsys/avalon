@@ -28,18 +28,18 @@ Rails.application.reloader.to_prepare do
     # :mongoid (bson_ext recommended) by default. Other ORMs may be
     # available as additional gems.
     require 'devise/orm/active_record'
-    config.omniauth(:okta,
-                      ENV['OKTA_CLIENT_ID'],
-                      ENV['OKTA_CLIENT_SECRET'],
-                      scope: 'openid profile email',
-                      fields: ['profile', 'email'],
-                      client_options: {
-                        site:          'https://oberlin.okta.com',
-                        authorize_url: 'https://oberlin.okta.com/oauth2/default/v1/authorize',
-                        token_url:     'https://oberlin.okta.com/oauth2/default/v1/token',
-                        user_info_url: 'https://oberlin.okta.com/oauth2/default/v1/userinfo',
-                      },
-                      strategy_class: OmniAuth::Strategies::Okta)
+    config.omniauth(:oktaoauth, 
+                  ENV['OKTA_CLIENT_ID'], 
+                  ENV['OKTA_CLIENT_SECRET'], 
+                  scope: 'openid profile email',
+                  fields: ['profile', 'email'],
+                  client_options: {
+                    site:          'https://oberlin.okta.com',
+                    authorize_url: 'https://oberlin.okta.com/oauth2/default/v1/authorize',
+                    token_url:     'https://oberlin.okta.com/oauth2/default/v1/token',
+                    user_info_url: 'https://oberlin.okta.com/oauth2/default/v1/userinfo',
+                  },
+                  strategy_class: OmniAuth::Strategies::Okta)
                         
  #   config.omniauth(:okta,
  #                     ENV['OKTA_CLIENT_ID'],
