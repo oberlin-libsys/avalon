@@ -29,7 +29,9 @@ class User < ActiveRecord::Base
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable
   # Registration is controlled via settings.yml
-  devise :invitable, :omniauthable,  authentication_keys: [:login],  omniauth_providers: [:oktaoauth] 
+  devise :database_authenticatable, :invitable, :omniauthable, 
+       authentication_keys: [:login], 
+       omniauth_providers: [:oktaoauth]
   # devise_list = [ :database_authenticatable, :invitable, :omniauthable,
  #                 :recoverable, :rememberable, :trackable, :validatable ]
   #devise_list << :registerable if Settings.auth.registerable
