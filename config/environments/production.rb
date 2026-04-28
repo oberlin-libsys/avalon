@@ -6,6 +6,14 @@ Rails.application.configure do
   # Verifies that versions and hashed value of the package contents in the project's package.json
   # config.webpacker.check_yarn_integrity = false
 
+  # allows local IP and official public url.
+  config.hosts = [
+    "10.1.2.87",
+    "media.lib.oberlin.edu",
+    "localhost",
+    "127.0.0.1"
+  ]
+  
   # Code is not reloaded between requests.
   config.cache_classes = true
 
