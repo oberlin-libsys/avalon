@@ -88,13 +88,20 @@ Unless required by applicable law or agreed to in writing, software distributed
     </li>
   <% end %>
 
-<li class="nav-item">
-  <%= form_tag(main_app.user_oktaoauth_omniauth_authorize_path, method: :post, data: { turbo: false }) do %>
-    <button type="submit" class="nav-link btn btn-link" style="border: none; background: transparent; cursor: pointer;">
-      Sign In
-    </button>
+<% if user_signed_in? %>
+    <li class="nav-item">
+      <%= link_to('Sign Out', main_app.destroy_user_session_path, method: :delete, class: 'nav-link') %>
+    </li>
+  <% else %>
+    <li class="nav-item">
+      <%= form_tag(main_app.user_oktaoauth_omniauth_authorize_path, method: :post, data: { turbo: false }) do %>
+        <button type="submit" class="nav-link btn btn-link" style="border: none; background: transparent; cursor: pointer;">
+          Sign In
+        </button>
+      <% end %>
+    </li>
   <% end %>
-</li>
+
   <% unless current_page?(main_app.root_path) %>
     <li class="desktop-hidden"><%= render :partial=>'modules/avalon_search_form' %></li>
   <% end %>
