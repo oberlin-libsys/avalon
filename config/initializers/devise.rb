@@ -30,17 +30,14 @@ Rails.application.reloader.to_prepare do
     require 'devise/orm/active_record'
     # At the bottom of the Devise.setup block
   config.omniauth(:oktaoauth, 
-                  ENV['OKTA_CLIENT_ID'], 
-                  ENV['OKTA_CLIENT_SECRET'], 
-                  scope: 'openid profile email',
-                  fields: ['profile', 'email'],
-                  client_options: {
-                    site:          ENV['OKTA_ISSUER'],
-                    authorize_url: "#{ENV['OKTA_ISSUER']}/v1/authorize",
-                    token_url:     "#{ENV['OKTA_ISSUER']}/v1/token",
-                    user_info_url: "#{ENV['OKTA_ISSUER']}/v1/userinfo"
-                  },
-                  strategy_class: OmniAuth::Strategies::Okta)
+                ENV['OKTA_CLIENT_ID'], 
+                ENV['OKTA_CLIENT_SECRET'], 
+                scope: 'openid profile email',
+                client_options: {
+                  site: ENV['OKTA_ISSUER']
+                },
+                issuer: ENV['OKTA_ISSUER'],
+                strategy_class: OmniAuth::Strategies::Okta)
                         
  #   config.omniauth(:okta,
  #                     ENV['OKTA_CLIENT_ID'],
