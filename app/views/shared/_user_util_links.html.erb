@@ -89,7 +89,7 @@ Unless required by applicable law or agreed to in writing, software distributed
   <% end %>
 
 <li class="nav-item">
-  <%= form_tag('/users/auth/oktaoauth', method: 'post', data: { turbo: false }) do %>
+  <%= form_tag(main_app.user_oktaoauth_omniauth_authorize_path, method: :post, data: { turbo: false }) do %>
     <button type="submit" class="nav-link btn btn-link" style="border: none; background: transparent; cursor: pointer;">
       Sign In
     </button>
